@@ -204,4 +204,26 @@ int eslib_proc_getfds(pid_t pid, int **outlist);
  */
 void eslib_dbg_print_backtrace();
 
+
+
+/* =====================================
+ * 		macros
+ * =====================================
+ */
+
+/*
+ * compare two timevals, returns (current - start > millisec)
+ * do not use this for a long term timer, unless 64bit types!
+ */
+#define eslib_ms_elapsed(curtime_, start_, millisec_)		\
+	((curtime_.tv_sec - start_.tv_sec) * 1000		\
+	 + (curtime_.tv_usec - start_.tv_usec) / 1000 > millisec_ )
+
+
+
+
+
+
+
+
 #endif
