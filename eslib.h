@@ -6,7 +6,9 @@
 
 #include <sys/types.h>
 
-
+#ifndef MAX_SYSTEMPATH
+	#define MAX_SYSTEMPATH 4096
+#endif
 /* =====================================
  * 		sockets
  * =====================================
@@ -40,7 +42,7 @@ int eslib_sock_setnonblock(int sock);
 int eslib_sock_create_passive(char *path, int backlog);
 
 /*
- *  send fd over socket
+ *  send fd over socket, data will be single character 'F'
  *  returns
  *   0  - ok
  *  -1	- error
@@ -48,7 +50,7 @@ int eslib_sock_create_passive(char *path, int backlog);
 int eslib_sock_send_fd(int sock, int fd);
 
 /*
- *  receive fd in fd_out over socket
+ *  receive fd in fd_out over socket, data must be single character 'F'
  *  returns
  *   0	- ok
  *  -1	- errno EAGAIN set if nonblocking socket, try again.
@@ -124,22 +126,24 @@ int eslib_file_isdir(char *path);
  *  create the full path if any directories did not exist using mode
  *  sets ownership of new directories to process real uid/gid
  *  use with caution if potentially creating root system paths!
+ *  use_realid will chown new directories to getuid() / getgid()
  *  returns
  *   0  - ok
  *  -1  - error
  *
  */
-int eslib_file_mkdirpath(char *path, mode_t mode);
+int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid);
 
 /*
  *  create file, and any directories needed to complete path using dirmode
  *  0700 permission is used for new file
  *  use with caution if potentially creating root system files/paths!
+ *  use_realid will chown new directories+file to getuid() / getgid()
  *  returns
  *   0  - ok
  *  -1	- error
  */
-int eslib_file_mkfile(char *path, mode_t dirmode);
+int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid);
 
 /*
  *  returns

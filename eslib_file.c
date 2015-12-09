@@ -183,13 +183,11 @@ int eslib_file_isdir(char *path)
 }
 
 
-int eslib_file_mkdirpath(char *path, mode_t mode)
+int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid)
 {
 	int i;
 	char curdir[MAX_SYSTEMPATH];
 	int ret;
-	uid_t ruid = getuid();
-	gid_t rgid = getgid();
 
 	if (eslib_file_path_check(path))
 		return -1;
@@ -221,8 +219,8 @@ int eslib_file_mkdirpath(char *path, mode_t mode)
 						strerror(errno));
 				return -1;
 			}
-			/* XXX XXX XXX XXX double check, this seems wrong */
-			chown(curdir, ruid, rgid);
+			if (use_realid)
+				chown(curdir, getuid(), getgid());
 		}
 		else if (ret == 1) {
 			if (eslib_file_isdir(curdir) != 1) {
@@ -243,7 +241,7 @@ int eslib_file_mkdirpath(char *path, mode_t mode)
 }
 
 
-int eslib_file_mkfile(char *path, mode_t dirmode)
+int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid)
 {
 	unsigned int i;
 	unsigned int slashidx = 0;
@@ -273,7 +271,7 @@ int eslib_file_mkfile(char *path, mode_t dirmode)
 		memset(dirpath, 0, sizeof(dirpath));
 		strncpy(dirpath, path, slashidx);
 		dirpath[MAX_SYSTEMPATH-1] = '\0'; 
-		if (eslib_file_mkdirpath(dirpath, dirmode)) {
+		if (eslib_file_mkdirpath(dirpath, dirmode, use_realid)) {
 			printf("mkfile error creating directory path\n");
 			return -1;
 		}
@@ -286,6 +284,8 @@ int eslib_file_mkfile(char *path, mode_t dirmode)
 		return -1;
 	}
 	close(fd);
+	if (use_realid)
+		chown(path, getuid(), getgid());
 	return 0;
 
 }

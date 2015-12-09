@@ -69,7 +69,7 @@ int eslib_sock_create_passive(char *path, int backlog)
 	r = eslib_file_exists(path);
 	if (r == 0) {
 		printf("file does not exist, will create: %s \n", path);
-		if (eslib_file_mkfile(path, 0755))
+		if (eslib_file_mkfile(path, 0755, 0))
 			printf("mkfile error\n");
 	}
 	else if (r == -1)
