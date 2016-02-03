@@ -58,10 +58,8 @@ int eslib_sock_send_fd(int sock, int fd);
  */
 int eslib_sock_recv_fd(int sock, int *fd_out);
 
-#if 0
 int eslib_sock_send_cred(int sock);
 int eslib_sock_recv_cred(int sock, struct ucred *out_creds);
-#endif
 
 
 

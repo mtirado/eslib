@@ -21,7 +21,7 @@ int eslib_sock_axe(int sock)
 {
 	shutdown(sock, SHUT_RDWR);
 	if (close(sock)) {
-		printf("close error: %s\n", strerror(errno));
+		printf("socket close error: %s\n", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -110,7 +110,7 @@ fail:
 
 
 /*
- *  will block for around 5 milliseconds if EINTR before failing
+ *  will block for around 5(+) milliseconds if EINTR before failing
  */
 int eslib_sock_send_fd(int sock, int fd)
 {
@@ -146,14 +146,15 @@ int eslib_sock_send_fd(int sock, int fd)
 	cmhp->cmsg_level = SOL_SOCKET;
 	cmhp->cmsg_type = SCM_RIGHTS;
 	*((int *)CMSG_DATA(cmhp)) = fd;
-	for (i = 0; i < 10; ++i) {
+	for (i = 0; i < 100; ++i) {
 		retval = sendmsg(sock, &msgh, MSG_DONTWAIT);
 		if (retval == -1 && errno == EINTR) {
-			usleep(500);
+			usleep(50);
 			continue;
 		}
-		else
+		else {
 			break;
+		}
 	}
 
 	if (retval != (int)iov.iov_len){
@@ -182,10 +183,10 @@ int eslib_sock_recv_fd(int sock, int *fd_out)
 	int fd;
 	int retval;
 
+	errno = 0;
 	if (fd_out == NULL)
 		return -1;
 	*fd_out = -1;
-	errno = 0;
 
 	memset(&control_un, 0, sizeof(control_un));
 	control_un.cmh.cmsg_len = CMSG_LEN(sizeof(int));
@@ -210,14 +211,11 @@ int eslib_sock_recv_fd(int sock, int *fd_out)
 	else if (retval == 0 || retval == -1 ) {
 		if (retval == 0)
 			errno = ECONNRESET;
-		printf("recvmsg error(%d): %s\n", retval, strerror(errno));
-		/*eslib_dbg_print_backtrace();*/
 		return -1;
 	}
 	cmhp = CMSG_FIRSTHDR(&msgh);
 	if (cmhp == NULL) {
 		printf("recv_fd error, no message header\n");
-		/*eslib_dbg_print_backtrace();*/
 		return -1;
 	}
 	if ( cmhp->cmsg_len != CMSG_LEN(sizeof(int))) {
@@ -245,29 +243,40 @@ int eslib_sock_recv_fd(int sock, int *fd_out)
 }
 
 
-/* disabled because the functions are unused + untested  */
-#if 0
 
-/* blocks for ~5ms if EINTR */
+/* blocks for 5(+)ms if EINTR */
 int eslib_sock_send_cred(int sock)
 {
-	int r, i;
+	int r, i, e;
+	int optval = 1;
 	const char msg = 'C';
 
 	if (sock == -1)
 		return -1;
 
-	for (i = 0; i < 10; ++i) {
+	e = 0;
+	errno = 0;
+	/* set socket opt temporarily to attach credentials */
+	if (setsockopt(sock, SOL_SOCKET, SO_PASSCRED, &optval,sizeof(optval))){
+		printf("couldn't set socket option: %s\n", strerror(errno));
+		return -1;
+	}
+	for (i = 0; i < 100; ++i) {
 		r = send(sock, &msg, 1, MSG_DONTWAIT);
 		if (r == -1 && errno == EINTR) {
-			usleep(500);
+			usleep(50);
 			continue;
 		}
-		else
+		else {
+			e = errno;
 			break;
+		}
 	}
+	optval = 0;
+	if (setsockopt(sock, SOL_SOCKET, SO_PASSCRED, &optval,sizeof(optval)))
+		printf("couldn't set socket option: %s\n", strerror(errno));
 	if (r != 1) {
-		printf("send(): %s\n");
+		printf("send_cred(): %s\n", strerror(e));
 		return -1;
 	}
 	return 0;
@@ -296,10 +305,11 @@ int eslib_sock_recv_cred(int sock, struct ucred *out_creds)
 	int retval;
 	int optval = 1;
 
+	errno = 0;
 	if (sock == -1 || !out_creds)
 		return -1;
 
-	/* set socket opt temporarily so recv grabs credentials from skb */
+	/* set socket opt temporarily to retreive credentials */
 	if (setsockopt(sock, SOL_SOCKET, SO_PASSCRED, &optval,sizeof(optval))){
 		printf("couldn't set socket option: %s\n", strerror(errno));
 		return -1;
@@ -329,13 +339,10 @@ int eslib_sock_recv_cred(int sock, struct ucred *out_creds)
 	else if (retval == -1 || retval == 0) {
 		if (retval == 0)
 			errno = ECONNRESET;
-		printf("recvmsg error(%d): %s\n", retval, strerror(errno));
-		/*eslib_dbg_print_backtrace();*/
 		goto out;
 	}
-	retval = -1;
-	printf("recv'd: %d\n", retval);
 	cmhp = CMSG_FIRSTHDR(&msgh);
+	retval = -1;
 	if (cmhp == NULL) {
 		printf("recv_cred error, no message header\n");
 		goto out;
@@ -355,29 +362,19 @@ int eslib_sock_recv_cred(int sock, struct ucred *out_creds)
 	}
 	if (data != 'C') {
 		printf("invalid cred message(%d)\n", (int)data);
-		errno = EAGAIN;
 		goto out;
 	}
 	retval = 0;
 
-	printf("setting creds and out \n");
 	creds = (struct ucred *)CMSG_DATA(cmhp);
 	memcpy(out_creds, creds, sizeof(*creds));
-	printf("ok ok ok ok\n");
 out:
 	optval = 0;
 	if (setsockopt(sock, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)))
 		printf("couldn't set socket option: %s\n", strerror(errno));
-	printf("returning\n");
 	return retval;
 
 }
-
-#endif
-
-
-
-
 
 
 
