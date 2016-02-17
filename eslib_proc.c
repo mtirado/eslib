@@ -139,7 +139,6 @@ char *eslib_proc_getenv(char *name)
 	char **e;
 	char *str = NULL;
 
-	/* namlen stops at '='  */
 	namelen = strlen(name);
 
 	errno = 0;
