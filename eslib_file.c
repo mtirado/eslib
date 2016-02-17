@@ -296,9 +296,6 @@ char *eslib_file_getname(char *path)
 	int len;
 	int i;
 
-	if (eslib_file_path_check(path))
-		return NULL;
-
 	len = strnlen(path, MAX_SYSTEMPATH);
 	i = len;
 	if (len >= MAX_SYSTEMPATH)
