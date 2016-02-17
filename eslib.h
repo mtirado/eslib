@@ -193,7 +193,21 @@ int eslib_proc_numfds(pid_t pid);
 int eslib_proc_getfds(pid_t pid, int **outlist);
 
 
+/*
+ *  return environment variable string.
+ *  null if not found,
+ *  null if duplicates found, errno == ENOTUNIQ
+ */
+char *eslib_proc_getenv(char *name);
 
+/*
+ *  set environment variable.
+ *
+ *  return  0 if success
+ *         -1 on error
+ *  errno = ENOTUNIQ if already exists
+ */
+int eslib_proc_setenv(char *name, char *val);
 
 
 /* =====================================

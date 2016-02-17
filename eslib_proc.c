@@ -12,6 +12,8 @@
 
 #include "eslib.h"
 
+extern char **environ;
+
 int eslib_proc_numfds(pid_t pid)
 {
 	char path[256];
@@ -127,6 +129,112 @@ failed:
 	closedir(dir);
 	return -1;
 }
+
+
+
+char *eslib_proc_getenv(char *name)
+{
+	int found = 0;
+	size_t namelen;
+	char **e;
+	char *str = NULL;
+
+	/* namlen stops at '='  */
+	namelen = strlen(name);
+
+	errno = 0;
+	e = environ;
+	while (*e != NULL)
+	{
+		if (strncmp(name, *e, namelen) == 0) {
+			if (found) {
+				errno = ENOTUNIQ;
+				return NULL;
+			}
+			if ((*e)[namelen] == '=') {
+				str = &(*e)[namelen+1];
+				found = 1;
+			}
+		}
+		++e;
+	}
+	return str;
+}
+
+int eslib_proc_setenv(char *name, char *val)
+{
+	size_t len;
+	char **e;
+	char *str;
+	int idx, count;
+	static int mallocd = 0;
+
+	errno = 0;
+	len = strlen(name);
+
+	e = environ;
+	idx = -1;
+	count = 0;
+	while (*e != NULL)
+	{
+		if (strncmp(name, *e, len) == 0) {
+			if (idx != -1) {
+				printf("duplicate entry found\n");
+				errno = ENOTUNIQ;
+				return -1;
+			}
+			if (name[len] == '\0') {
+				idx = count;
+			}
+		}
+		++e;
+		++count;
+	}
+
+	len = strlen(name) + 1 + strlen(val) + 1; /*name=val\0*/
+	str = malloc(len);
+	if (str == NULL)
+		return -1;
+
+	snprintf(str, len, "%s=%s", name, val);
+	if (idx != -1) {
+		/* replace existing */
+		environ[idx] = str;
+		return 0;
+	}
+	else {
+		/* create new entry, alloc new list */
+		char **newenv;
+		int i;
+		if (!mallocd)
+			newenv = malloc(sizeof(char *) * (count + 2));
+		else
+			newenv = realloc(environ, sizeof(char *) * (count + 2));
+
+		if (newenv == NULL)
+			return -1;
+
+		for (i = 0; i < count; ++i)
+			newenv[i] = environ[i];
+
+		environ = newenv;
+		environ[count] = str;
+		environ[count+1] = NULL;
+		mallocd = 1;
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
