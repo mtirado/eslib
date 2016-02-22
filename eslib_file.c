@@ -90,7 +90,6 @@ int eslib_file_getparent(char *inpath, char outpath[MAX_SYSTEMPATH])
 	if (i >= MAX_SYSTEMPATH)
 		return -1;
 
-	memset(outpath, 0, i);
 	strncpy(outpath, inpath, i);
 	outpath[i] = '\0';
 
