@@ -5,10 +5,13 @@
 #define ESLIB_H__
 
 #include <sys/types.h>
-
+#include <time.h>
 #ifndef MAX_SYSTEMPATH
 	#define MAX_SYSTEMPATH 4096
 #endif
+
+#define ESLIB_LOG_MAXMSG 1024
+#define ESLIB_MAX_PROCNAME 32
 /* =====================================
  * 		sockets
  * =====================================
@@ -209,6 +212,11 @@ char *eslib_proc_getenv(char *name);
  */
 int eslib_proc_setenv(char *name, char *val);
 
+/*
+ * parses /proc/pid/cmdline once for process name
+ * always returns a string, no-procname if unable to read cmdline
+ */
+char *eslib_proc_getname();
 
 /* =====================================
  * 		debug halp!
@@ -216,7 +224,20 @@ int eslib_proc_setenv(char *name, char *val);
  */
 void eslib_dbg_print_backtrace();
 
+/* sends message to syslog, and print error message to stderr
+ * using a null name will attempt to read from /proc/pid/cmdline
+ */
+int eslib_logmsg(char *name, char *msg);
+int eslib_logerror(char *name, char *msg);
+int eslib_logcritical(char *name, char *msg);
 
+/* for log events that may be spammy, use timer.
+ * timer must be initialized to 0!
+ * message will not be repeated until seconds has elapsed
+ */
+int eslib_logmsg_t(char *name, char *msg, time_t *timer, unsigned int seconds);
+int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds);
+int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 
 /* =====================================
  * 		macros

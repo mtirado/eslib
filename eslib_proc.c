@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "eslib.h"
 
@@ -225,8 +226,41 @@ int eslib_proc_setenv(char *name, char *val)
 	return 0;
 }
 
+char *eslib_proc_getname()
+{
+	static char name[ESLIB_MAX_PROCNAME];
+	static int  once = 1;
 
-
+	if (once)
+	{
+		char buf[64];
+		int fd;
+		/* parse /proc/pid/cmdline */
+		snprintf(buf, sizeof(buf), "/proc/%d/cmdline", getpid());
+		fd = open(buf, O_CLOEXEC|O_RDONLY|O_NOCTTY);
+		if (fd == -1) {
+			printf("could not open %s\n", buf);
+			goto err;
+		}
+		while (1)
+		{
+			int r = read(fd, name, ESLIB_MAX_PROCNAME-1);
+			if (r == -1 && (errno == EINTR || errno == EAGAIN))
+				continue;
+			else if (r > 0)
+				break;
+			else
+				goto err;
+		}
+		once = 0;
+	}
+	name[ESLIB_MAX_PROCNAME-1] = '\0';
+	return name;
+err:
+	once = 0;
+	snprintf(name, ESLIB_MAX_PROCNAME, "no-procname");
+	return name;
+}
 
 
 
