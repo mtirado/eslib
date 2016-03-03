@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include <errno.h>
 #include <execinfo.h> /* backtrace */
 
 /* XXX needs -rdynamic set in LDFLAGS for function names*/

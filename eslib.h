@@ -5,7 +5,6 @@
 #define ESLIB_H__
 
 #include <sys/types.h>
-#include <time.h>
 #ifndef MAX_SYSTEMPATH
 	#define MAX_SYSTEMPATH 4096
 #endif
