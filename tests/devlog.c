@@ -1,3 +1,6 @@
+/* (c) 2016 Michael R. Tirado -- GPLv3, GNU General Public License, version 3.
+ * contact: mtirado418@gmail.com
+ */
 #include <stdio.h>
 #include "../eslib.h"
 int main()
