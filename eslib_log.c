@@ -18,7 +18,6 @@
 #define ESLOG_MSG  1
 #define ESLOG_ERR  2
 #define ESLOG_CRIT 3
-#define ESLOG_DFLTDLY (60 * 10)
 
 static int logmsg(char *name, char *msg, int lvl)
 {
