@@ -52,7 +52,7 @@ int eslib_proc_getfds(pid_t pid, int **outlist)
 	int first_count;
 	int count;
 	DIR *dir;
-	char *err;
+	char *err = NULL;
 	int *fdlist = NULL;
 
 	if (!outlist)
@@ -106,7 +106,7 @@ int eslib_proc_getfds(pid_t pid, int **outlist)
 		}
 		errno = 0;
 		fdnum = strtol(dent->d_name, &err, 10);
-		if (*err || errno) {
+		if (err == NULL || *err || errno) {
 			printf("error reading fdnum: %s\n", dent->d_name);
 			goto failed;
 		}
