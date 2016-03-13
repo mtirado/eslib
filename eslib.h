@@ -167,9 +167,6 @@ uid_t eslib_file_getuid(char *path);
 ino_t eslib_file_getino(char *path);
 
 
-
-
-
 /* =====================================
  * 		process
  * =====================================
@@ -216,6 +213,16 @@ int eslib_proc_setenv(char *name, char *val);
  * always returns a string, no-procname if unable to read cmdline
  */
 char *eslib_proc_getname();
+
+/*
+ *  reads entire file using a single malloc
+ *  return file size, or -1 on error. if file size is 0 nothing is allocated,
+ *  and out pointer will be set to null. on success out points to file contents.
+ *  caller is responsible for freeing out buffer.
+ */
+off_t eslib_procfs_readfile(char *path, char **out);
+
+
 
 /* =====================================
  * 		debug halp!

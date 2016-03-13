@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <memory.h>
+#include <malloc.h>
 #include "eslib.h"
 
 

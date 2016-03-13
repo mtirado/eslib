@@ -262,6 +262,109 @@ err:
 	return name;
 }
 
+off_t eslib_procfs_readfile(char *path, char **out)
+{
+	char tmp[4096];
+	char *buf, *cur;
+	off_t size, bytes;
+	int fd;
+	char eof_check;
+	errno = 0;
+
+	if (out == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	*out = NULL;
+	buf = NULL;
+
+	/* open file, setup buffer */
+	fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		printf("open(%s): %s\n", path, strerror(errno));
+		return -1;
+	}
+	/* get filesize */
+	bytes = 0;
+	while (1)
+	{
+		int r = read(fd, tmp, sizeof(tmp));
+		if (r == -1 && (errno == EAGAIN || errno == EINTR)) {
+			continue;
+		}
+		else if (r < 0) {
+			printf("read(%d): %s\n", r, strerror(errno));
+			goto failure;
+		}
+		else if (r == 0) {
+			break;
+		}
+		else {
+			bytes += r;
+		}
+	}
+	size = bytes;
+	if (size < 0) {
+		goto failure;
+	}
+	if (size == 0) {
+		close(fd);
+		return 0;
+	}
+	if (lseek(fd, 0, SEEK_SET)) {
+		printf("lseek: %s\n", strerror(errno));
+		goto failure;
+	}
+	buf = malloc(size);
+	if (buf == NULL) {
+		printf("malloc: %s\n", strerror(errno));
+		goto failure;
+	}
+	cur = buf;
+	bytes = size;
+	/* read file */
+	while (1)
+	{
+		int r = read(fd, cur, bytes);
+		if (r == -1 && (errno == EAGAIN || errno == EINTR)) {
+			continue;
+		}
+		else if (r < 0) {
+			printf("read(%d): %s\n", r, strerror(errno));
+			goto failure;
+		}
+		else if (r == 0) {
+			/*printf("file size shrunk\n");*/
+			errno = EAGAIN;
+			goto failure;
+		}
+		else {
+			if (r == bytes) {
+				break;
+			}
+			bytes -= r;
+			cur += r;
+			if (bytes < 0)
+				goto failure;
+		}
+	} /* next read should be eof */
+	if (read(fd, &eof_check, 1) != 0) {
+		/*printf("file size grew\n");*/
+		errno = EAGAIN;
+		goto failure;
+	}
+
+	close(fd);
+	*out = buf;
+	return size;
+
+failure:
+	close(fd);
+	if (buf != NULL)
+		free(buf);
+	return -1;
+
+}
 
 
 
