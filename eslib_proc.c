@@ -269,7 +269,15 @@ off_t eslib_procfs_readfile(char *path, char **out)
 	off_t size, bytes;
 	int fd;
 	char eof_check;
+	int retries = 1000;
+
+start_over:
 	errno = 0;
+	if (--retries < 0) {
+		printf("/proc/mounts is changing too rapidly\n");
+		errno = EAGAIN;
+		return -1;
+	}
 
 	if (out == NULL) {
 		errno = EINVAL;
@@ -277,15 +285,14 @@ off_t eslib_procfs_readfile(char *path, char **out)
 	}
 	*out = NULL;
 	buf = NULL;
-
 	/* open file, setup buffer */
 	fd = open(path, O_RDONLY);
 	if (fd == -1) {
 		printf("open(%s): %s\n", path, strerror(errno));
 		return -1;
 	}
-	/* get filesize */
-	bytes = 0;
+	/* get filesize, SEEK_END fails with EINVAL on procfs */
+	size = 0;
 	while (1)
 	{
 		int r = read(fd, tmp, sizeof(tmp));
@@ -300,10 +307,10 @@ off_t eslib_procfs_readfile(char *path, char **out)
 			break;
 		}
 		else {
-			bytes += r;
+			size += r;
 		}
 	}
-	size = bytes;
+	bytes = size;
 	if (size < 0) {
 		goto failure;
 	}
@@ -334,9 +341,8 @@ off_t eslib_procfs_readfile(char *path, char **out)
 			goto failure;
 		}
 		else if (r == 0) {
-			/*printf("file size shrunk\n");*/
-			errno = EAGAIN;
-			goto failure;
+			/*printf("file shrunk\n");*/
+			goto try_again;
 		}
 		else {
 			if (r == bytes) {
@@ -349,18 +355,23 @@ off_t eslib_procfs_readfile(char *path, char **out)
 		}
 	} /* next read should be eof */
 	if (read(fd, &eof_check, 1) != 0) {
-		/*printf("file size grew\n");*/
-		errno = EAGAIN;
-		goto failure;
+		/*printf("file grew\n");*/
+		goto try_again;
 	}
 
 	close(fd);
 	*out = buf;
 	return size;
 
+try_again:
+	close(fd);
+	if(buf)
+		free(buf);
+	goto start_over;
+
 failure:
 	close(fd);
-	if (buf != NULL)
+	if (buf)
 		free(buf);
 	return -1;
 
