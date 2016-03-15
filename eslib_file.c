@@ -219,8 +219,13 @@ int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid)
 						strerror(errno));
 				return -1;
 			}
-			if (use_realid)
+			if (chmod(curdir, mode)) {
+				printf("chmod(%s): %s\n", curdir, strerror(errno));
+				return -1;
+			}
+			if (use_realid) {
 				chown(curdir, getuid(), getgid());
+			}
 		}
 		else if (ret == 1) {
 			if (eslib_file_isdir(curdir) != 1) {
