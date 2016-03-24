@@ -160,24 +160,23 @@ static int nlmsg_send(void *req, unsigned int size)
 	msg = (struct nlmsghdr *)buf;
 	if (msg->nlmsg_len < ACKSIZE) {
 		printf("invalid response\n");
-		return -1;
+		goto fail;
 	}
 	if (msg->nlmsg_type != NLMSG_ERROR) {
 		printf("unexpected message\n");
-		return -1;
+		goto fail;
 	}
 	/* get error code */
 	ack_err = *((unsigned int *)(msg+1));
 	if (ack_err == 0) {
 		/* proper ACK */
-		close(nlfd);
-		return 0;
+		goto ok;
 	}
 
 	/* NACK'd, contains original message */
 	if ((unsigned int)r != size+ACKSIZE) {
 		printf("invalid nack\n");
-		return -1;
+		goto fail;
 	}
 
 	/* verify NACK is for the message we just sent
@@ -197,12 +196,15 @@ static int nlmsg_send(void *req, unsigned int size)
 		goto fail;
 	}
 
+	/* proper NACK */
 	close(nlfd);
 	return 1;
-
 fail:
 	close(nlfd);
 	return -1;
+ok:
+	close(nlfd);
+	return 0;
 }
 
 /* delete link by name, should we change to by index and make by name a wrapper? */
