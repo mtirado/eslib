@@ -245,6 +245,9 @@ int eslib_logmsg_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 
+int eslib_rtnetlink_create_veth(char *name);
+int eslib_rtnetlink_delete_link(char *name);
+
 /* =====================================
  * 		macros
  * =====================================
