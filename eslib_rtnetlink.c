@@ -1,3 +1,6 @@
+/* (c) 2015 Michael R. Tirado -- GPLv3, GNU General Public License, version 3.
+ * contact: mtirado418@gmail.com
+ */
 #define _GNU_SOURCE
 #include <linux/veth.h>
 #include <netlink/netlink.h>
@@ -231,7 +234,6 @@ int eslib_rtnetlink_delete_link(char *name)
 	req.ifmsg.ifi_family = AF_UNSPEC;
 	req.ifmsg.ifi_index  = if_nametoindex(name);
 
-	/*printf("got index: %d\n", req.ifmsg.ifi_index);*/
 	if (req.ifmsg.ifi_index == 0) {
 		printf("could not get index for iface: %s\n", name);
 		return -1;

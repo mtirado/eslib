@@ -1,3 +1,6 @@
+/* (c) 2015 Michael R. Tirado -- GPLv3, GNU General Public License, version 3.
+ * contact: mtirado418@gmail.com
+ */
 #define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/fcntl.h>
