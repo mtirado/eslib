@@ -11,6 +11,10 @@
 
 #define ESLIB_LOG_MAXMSG 1024
 #define ESLIB_MAX_PROCNAME 32
+
+#define RTNL_LINKDOWN 0
+#define RTNL_LINKUP   1
+
 /* =====================================
  * 		sockets
  * =====================================
@@ -246,7 +250,9 @@ int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds)
 int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 
 int eslib_rtnetlink_create_veth(char *name);
-int eslib_rtnetlink_delete_link(char *name);
+int eslib_rtnetlink_linkdel(char *name);
+int eslib_rtnetlink_linkset(char *name, int up);
+int eslib_rtnetlink_addaddr(char *name, char *addr, unsigned char prefix_len);
 
 /* =====================================
  * 		macros

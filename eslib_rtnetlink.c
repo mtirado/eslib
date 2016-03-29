@@ -3,7 +3,10 @@
  */
 #define _GNU_SOURCE
 #include <linux/veth.h>
+#include <linux/if_addr.h>
 #include <netlink/netlink.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <net/if.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -22,6 +25,12 @@
 struct rtnl_iface_req {
 	struct nlmsghdr hdr;
 	struct ifinfomsg ifmsg;
+	char buf[BUFSIZE];
+};
+/* address request */
+struct rtnl_addr_req {
+	struct nlmsghdr hdr;
+	struct ifaddrmsg addrmsg;
 	char buf[BUFSIZE];
 };
 
@@ -55,13 +64,12 @@ static int netlink_open(int protocol)
 		close(fd);
 		return -1;
 	}
-	/* extra error checking? XXX */
 	return fd;
 }
 
 /* add attribute to netlink message */
 static struct rtattr *nlmsg_addattr(struct nlmsghdr *nlmsg, unsigned short maxlen,
-			     unsigned short type, char *data, unsigned short size)
+				    unsigned short type, void *data, unsigned short size)
 {
 	struct rtattr *attr;
 	unsigned short len = RTA_LENGTH(size); /* add header size */
@@ -210,8 +218,98 @@ ok:
 	return 0;
 }
 
+/* add address (ipv4), prefixlen is subnet mask 24 = 255.255.255.0 */
+int eslib_rtnetlink_addaddr(char *name, char *addr, unsigned char prefix_len)
+{
+	struct rtnl_addr_req req;
+	struct timespec t;
+	struct in_addr ipaddr;
+	const unsigned int bytelen = 4;
+	unsigned int seqnum;
+	unsigned int namelen;
+
+	if (prefix_len > 32) {
+		printf("invalid prefix len\n");
+		return -1;
+	}
+	namelen = strnlen(name, IFNAMSIZ);
+	if (namelen >= IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+	memset(&ipaddr, 0, sizeof(ipaddr));
+	memset(&req, 0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+
+	if (inet_pton(AF_INET, addr, &ipaddr) <= 0) {
+		printf("bad ipv4 address\n");
+		return -1;
+	}
+
+	/* msg header */
+	req.hdr.nlmsg_type  = RTM_NEWADDR;
+	req.hdr.nlmsg_flags = NLM_F_CREATE|NLM_F_EXCL|NLM_F_ACK|NLM_F_REQUEST;
+	req.hdr.nlmsg_len   = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	req.hdr.nlmsg_seq   = seqnum;
+	req.addrmsg.ifa_family    = AF_INET; /*32bit*/
+	req.addrmsg.ifa_index     = if_nametoindex(name);
+	req.addrmsg.ifa_prefixlen = prefix_len;
+
+	if (req.addrmsg.ifa_index == 0) {
+		printf("could not get index for iface: %s\n", name);
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_LOCAL, &ipaddr, bytelen) == NULL) {
+		printf("adattr failed\n");
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_ADDRESS, &ipaddr, bytelen) == NULL) {
+		printf("adattr failed\n");
+		return -1;
+	}
+	return nlmsg_send(&req, req.hdr.nlmsg_len);
+}
+/* either up or down */
+int eslib_rtnetlink_linkset(char *name, int up)
+{
+	struct rtnl_iface_req req;
+	struct timespec t;
+	unsigned int seqnum;
+	unsigned int namelen;
+
+	namelen = strnlen(name, IFNAMSIZ);
+	if (namelen >= IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+	memset(&req, 0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	/* msg header */
+	req.hdr.nlmsg_type    = RTM_NEWLINK;
+	req.hdr.nlmsg_flags   = NLM_F_ACK|NLM_F_REQUEST;
+	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_seq     = seqnum;
+	req.ifmsg.ifi_family  = AF_UNSPEC;
+	req.ifmsg.ifi_index   = if_nametoindex(name);
+	req.ifmsg.ifi_change |= IFF_UP;
+	if (up)
+		req.ifmsg.ifi_flags |= IFF_UP;
+	else
+		req.ifmsg.ifi_flags &= ~IFF_UP;
+
+	if (req.ifmsg.ifi_index == 0) {
+		printf("could not get index for iface: %s\n", name);
+		return -1;
+	}
+
+	return nlmsg_send(&req, req.hdr.nlmsg_len);
+
+}
+
 /* delete link by name, should we change to by index and make by name a wrapper? */
-int eslib_rtnetlink_delete_link(char *name)
+int eslib_rtnetlink_linkdel(char *name)
 {
 	struct rtnl_iface_req req;
 	struct timespec t;
