@@ -102,7 +102,7 @@ static int nlmsg_nest_end(struct nlmsghdr *nlmsg, struct rtattr *start)
 	return 0;
 }
 
-/* ack is first nlmsghdr returned, attached by kernel */
+/* if NLM_F_ACK flag is set, kernel attaches ack as first nlmsghdr returned */
 #define ACKSIZE (sizeof(struct nlmsghdr) + sizeof(unsigned int))
 /* blocks until sent, checks for valid ack */
 static int nlmsg_send(void *req, unsigned int size)
@@ -218,8 +218,8 @@ ok:
 	return 0;
 }
 
-/* add address (ipv4), prefixlen is subnet mask 24 = 255.255.255.0 */
-int eslib_rtnetlink_addaddr(char *name, char *addr, unsigned char prefix_len)
+/* add address (ipv4), prefix_len is subnet mask: 24 = 255.255.255.0 */
+int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 {
 	struct rtnl_addr_req req;
 	struct timespec t;
@@ -339,73 +339,171 @@ int eslib_rtnetlink_linkdel(char *name)
 
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
 }
-/* create a pair of veth devices <name>1 and <name>2 */
-int eslib_rtnetlink_create_veth(char *name)
+
+static int create_veth(struct rtnl_iface_req *req, char *name)
 {
 	char name1[IFNAMSIZ];
 	char name2[IFNAMSIZ];
-	struct rtnl_iface_req req;
+	unsigned int namelen;
 	struct rtattr *linkinfo, *infodata, *infopeer;
-	unsigned int seqnum;
-	unsigned short namelen;
-	struct timespec t;
 
-	if (name == NULL || *name == '\0') {
-		return -1;
-	}
 	namelen = strnlen(name, sizeof(name1)) + 1; /* add digit */
 	if (namelen >= sizeof(name1)) {
 		printf("veth interface name too long\n");
 		return -1;
 	}
-	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
-	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
-	memset(&req, 0, sizeof(req));
 	snprintf(name1, sizeof(name1), "%s1", name);
 	snprintf(name2, sizeof(name2), "%s2", name);
 
+	/* set interface 1 name,  namelen+(null terminator)*/
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name1, namelen+1) == NULL)
+		goto attr_fail;
+	/* nest linkinfo */
+	linkinfo = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINKINFO, NULL, 0);
+	if (linkinfo == NULL)
+		goto attr_fail;
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_KIND, "veth", 4) == NULL)
+		goto attr_fail;
+	/* nest info data */
+	infodata = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_DATA, NULL, 0);
+	if (infodata == NULL)
+		goto attr_fail;
+	/* nest veth peer info */
+	infopeer = nlmsg_addattr(&req->hdr, sizeof(*req), VETH_INFO_PEER, NULL, 0);
+	if (infopeer == NULL)
+		goto attr_fail;
+	/* peer interface info header, all zero's in this case */
+	req->hdr.nlmsg_len += sizeof(struct ifinfomsg);
+	/* set interface 2 name */
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name2, namelen+1) == NULL)
+		goto attr_fail;
+
+	/* update attribute nest lengths */
+	if (nlmsg_nest_end(&req->hdr, infopeer))
+		goto attr_fail;
+	if (nlmsg_nest_end(&req->hdr, infodata))
+		goto attr_fail;
+	if (nlmsg_nest_end(&req->hdr, linkinfo))
+		goto attr_fail;
+
+	return 0;
+attr_fail:
+	printf("veth addattr failure\n");
+	return -1;
+}
+
+static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
+{
+	struct rtattr *linkinfo, *infodata;
+	unsigned int namelen;
+	__u32 mindex;
+	__u16 mode = IPVLAN_MODE_L2;
+
+	if (master == NULL || *master == '\0') {
+		printf("no master interface\n");
+		return -1;
+	}
+	namelen = strnlen(name, IFNAMSIZ);
+	if (namelen >= IFNAMSIZ || namelen == 0) {
+		printf("bad name\n");
+		return -1;
+	}
+	if (strnlen(master, IFNAMSIZ) >= IFNAMSIZ) {
+		printf("bad master name\n");
+		return -1;
+	}
+
+
+	mindex = if_nametoindex(master);
+	if (mindex == 0) {
+		printf("cannot find master interface: %s\n", master);
+		return -1;
+	}
+
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINK,
+				&mindex, sizeof(mindex)) == NULL)
+		goto attr_fail;
+	/* set interface name,  namelen+(null terminator)*/
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name, namelen+1) == NULL)
+		goto attr_fail;
+	/* nest linkinfo */
+	linkinfo = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINKINFO, NULL, 0);
+	if (linkinfo == NULL)
+		goto attr_fail;
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_KIND, "ipvlan", 6) == NULL)
+		goto attr_fail;
+	/* nest info data */
+	infodata = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_DATA, NULL, 0);
+	if (infodata == NULL)
+		goto attr_fail;
+	/* set mode */
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IPVLAN_MODE,
+				&mode, sizeof(mode)) == NULL)
+		goto attr_fail;
+
+	/* update nest lengths */
+	if (nlmsg_nest_end(&req->hdr, infodata))
+		goto attr_fail;
+	if (nlmsg_nest_end(&req->hdr, linkinfo))
+		goto attr_fail;
+
+	return 0;
+
+attr_fail:
+	printf("veth addattr failure\n");
+	return -1;
+}
+
+/* create a pair of veth devices <name>1 and <name>2 */
+int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
+{
+	struct rtnl_iface_req req;
+	struct timespec t;
+	unsigned int seqnum;
+	unsigned int devkind;
+
+	if (name == NULL || *name == '\0') {
+		return -1;
+	}
+	printf("linknew(%s, %s, %s)\n", name, kind, (char *)typedat);
+	if (strncmp(kind, "veth", 4) == 0) {
+		devkind = RTNL_KIND_VETH;
+	}
+	else if (strncmp(kind, "ipvlan", 6) == 0) {
+		devkind = RTNL_KIND_IPVLAN;
+	}
+	else {
+		printf("unknown kind: %s\n", kind);
+		return -1;
+	}
+
 	/* msg header */
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	memset(&req, 0, sizeof(req));
 	req.hdr.nlmsg_type   = RTM_NEWLINK;
 	req.hdr.nlmsg_flags  = NLM_F_REQUEST|NLM_F_EXCL|NLM_F_CREATE|NLM_F_ACK;
 	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(struct ifinfomsg));
 	req.hdr.nlmsg_seq    = seqnum;
 	req.ifmsg.ifi_family = AF_UNSPEC;
 
-	/* set interface 1 name,  namelen+(null terminator)*/
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFLA_IFNAME, name1, namelen+1) == NULL)
-		goto attr_fail;
-	/* nest linkinfo */
-	linkinfo = nlmsg_addattr(&req.hdr, sizeof(req), IFLA_LINKINFO, NULL, 0);
-	if (linkinfo == NULL)
-		goto attr_fail;
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFLA_INFO_KIND, "veth", 4) == NULL)
-		goto attr_fail;
-	/* nest info data */
-	infodata = nlmsg_addattr(&req.hdr, sizeof(req), IFLA_INFO_DATA, NULL, 0);
-	if (infodata == NULL)
-		goto attr_fail;
-	/* nest veth peer info */
-	infopeer = nlmsg_addattr(&req.hdr, sizeof(req), VETH_INFO_PEER, NULL, 0);
-	if (infopeer == NULL)
-		goto attr_fail;
-	/* peer interface info header, all zero's in this case */
-	req.hdr.nlmsg_len += sizeof(struct ifinfomsg);
-	/* set interface 2 name */
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFLA_IFNAME, name2, namelen+1) == NULL)
-		goto attr_fail;
-
-	/* update attribute nest lengths */
-	if (nlmsg_nest_end(&req.hdr, infopeer))
-		goto attr_fail;
-	if (nlmsg_nest_end(&req.hdr, infodata))
-		goto attr_fail;
-	if (nlmsg_nest_end(&req.hdr, linkinfo))
-		goto attr_fail;
-
+	switch (devkind)
+	{
+		/* these are basic ethernet socketpairs */
+	case RTNL_KIND_VETH:
+		if (create_veth(&req, name))
+			return -1;
+		break;
+		/* at a quick glance ipvlan seems to be the most simple
+		 * minimal solution, so let's start with this one. */
+	case RTNL_KIND_IPVLAN:
+		if (create_ipvlan(&req, name, typedat))
+			return -1;
+		break;
+	default:
+		printf("switch default\n");
+		return -1;
+	}
 	/* send netlink message */
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
-
-attr_fail:
-	printf("veth addattr failure\n");
-	return -1;
 }

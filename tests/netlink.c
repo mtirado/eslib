@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include "../eslib.h"
 
-int main()
+static int test_veth()
 {
 	int r;
 
 	printf("creating \"blarg\" veth device\n");
-	r = eslib_rtnetlink_create_veth("blarg");
+	r = eslib_rtnetlink_linknew("blarg", "veth", NULL);
 	if (r == -1){
 		printf("netlink error\n");
 		return -1;
@@ -38,7 +38,7 @@ int main()
 
 	printf("ok..\n");
 	printf("blarg2 set up\n");
-	usleep(100000);
+	usleep(50000);
 
 	r = eslib_rtnetlink_linkset("blarg2", RTNL_LINKUP);
 	if (r == -1){
@@ -53,9 +53,9 @@ int main()
 
 	printf("ok..\n");
 	printf("setting blarg1 ip addr 10.0.0.1/24\n");
-	usleep(100000);
+	usleep(50000);
 
-	r = eslib_rtnetlink_addaddr("blarg1", "10.0.0.1", 24);
+	r = eslib_rtnetlink_linkaddr("blarg1", "10.0.0.1", 24);
 	if (r == -1){
 		printf("netlink error\n");
 		return -1;
@@ -67,9 +67,9 @@ int main()
 
 	printf("ok..\n");
 	printf("setting blarg2 ip addr 10.0.0.2/24\n");
-	usleep(100000);
+	usleep(50000);
 
-	r = eslib_rtnetlink_addaddr("blarg2", "10.0.0.2", 24);
+	r = eslib_rtnetlink_linkaddr("blarg2", "10.0.0.2", 24);
 	if (r == -1){
 		printf("netlink error\n");
 		return -1;
@@ -80,10 +80,9 @@ int main()
 	}
 
 
-	return 0;
 	printf("ok..\n");
 	printf("deleteing \"blarg\" veth device\n");
-	usleep(100000);
+	usleep(50000);
 	r = eslib_rtnetlink_linkdel("blarg1");
 	if (r == -1) {
 		printf("netlink error\n");
@@ -95,6 +94,40 @@ int main()
 	}
 
 
-	printf("test finished, all is well.\n");
+	printf("[pass] veth\n");
+	return 0;
+}
+
+static int test_ipvlan()
+{
+	int r;
+
+	printf("creating \"blarg\" veth device\n");
+	r = eslib_rtnetlink_linknew("blarg", "ipvlan", "eth0");
+	if (r == -1){
+		printf("netlink error\n");
+		return -1;
+	}
+	else if (r == 1) {
+		printf("create veth NACK'd\n");
+		return -1;
+	}
+
+	printf("ok..\n");
+	usleep(50000);
+
+	printf("[pass] ipvlan\n");
+
+	return 0;
+}
+
+int main()
+{
+	if (test_ipvlan())
+		return -1;
+	return 0;
+	if (test_veth())
+		return -1;
+	printf("test pass\n");
 	return 0;
 }

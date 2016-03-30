@@ -15,6 +15,9 @@
 #define RTNL_LINKDOWN 0
 #define RTNL_LINKUP   1
 
+#define RTNL_KIND_VETH   1
+#define RTNL_KIND_IPVLAN 2
+
 /* =====================================
  * 		sockets
  * =====================================
@@ -249,10 +252,10 @@ int eslib_logmsg_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 
-int eslib_rtnetlink_create_veth(char *name);
+int eslib_rtnetlink_linknew(char *name, char *type, void *typedat);
 int eslib_rtnetlink_linkdel(char *name);
 int eslib_rtnetlink_linkset(char *name, int up);
-int eslib_rtnetlink_addaddr(char *name, char *addr, unsigned char prefix_len);
+int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
 
 /* =====================================
  * 		macros
