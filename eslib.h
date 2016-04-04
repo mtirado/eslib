@@ -15,8 +15,10 @@
 #define RTNL_LINKDOWN 0
 #define RTNL_LINKUP   1
 
-#define RTNL_KIND_VETH   1
-#define RTNL_KIND_IPVLAN 2
+#define RTNL_KIND_INVALID 0
+#define RTNL_KIND_UNKNOWN 1
+#define RTNL_KIND_VETH    2
+#define RTNL_KIND_IPVLAN  3
 
 /* =====================================
  * 		sockets
