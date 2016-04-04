@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/ioctl.h>
 #include "eslib.h"
 
 #define  BUFSIZE (1024 * 16) /* 16KB XXX MSG_TRUNC is unhandled,
@@ -232,8 +233,8 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 		printf("invalid prefix len\n");
 		return -1;
 	}
-	namelen = strnlen(name, IFNAMSIZ);
-	if (namelen >= IFNAMSIZ) {
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
 		printf("name too long or no null terminator\n");
 		return -1;
 	}
@@ -257,7 +258,7 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 	req.addrmsg.ifa_prefixlen = prefix_len;
 
 	if (req.addrmsg.ifa_index == 0) {
-		printf("could not get index for iface: %s\n", name);
+		printf("could not get index for interface: %s\n", name);
 		return -1;
 	}
 	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_LOCAL, &ipaddr, bytelen) == NULL) {
@@ -278,8 +279,8 @@ int eslib_rtnetlink_linkset(char *name, int up)
 	unsigned int seqnum;
 	unsigned int namelen;
 
-	namelen = strnlen(name, IFNAMSIZ);
-	if (namelen >= IFNAMSIZ) {
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
 		printf("name too long or no null terminator\n");
 		return -1;
 	}
@@ -300,7 +301,7 @@ int eslib_rtnetlink_linkset(char *name, int up)
 		req.ifmsg.ifi_flags &= ~IFF_UP;
 
 	if (req.ifmsg.ifi_index == 0) {
-		printf("could not get index for iface: %s\n", name);
+		printf("could not get index for interface: %s\n", name);
 		return -1;
 	}
 
@@ -316,8 +317,8 @@ int eslib_rtnetlink_linkdel(char *name)
 	unsigned int seqnum;
 	unsigned int namelen;
 
-	namelen = strnlen(name, IFNAMSIZ);
-	if (namelen >= IFNAMSIZ) {
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
 		printf("name too long or no null terminator\n");
 		return -1;
 	}
@@ -333,7 +334,7 @@ int eslib_rtnetlink_linkdel(char *name)
 	req.ifmsg.ifi_index  = if_nametoindex(name);
 
 	if (req.ifmsg.ifi_index == 0) {
-		printf("could not get index for iface: %s\n", name);
+		printf("could not get index for interface: %s\n", name);
 		return -1;
 	}
 
@@ -347,8 +348,8 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 	unsigned int namelen;
 	struct rtattr *linkinfo, *infodata, *infopeer;
 
-	namelen = strnlen(name, sizeof(name1)) + 1; /* add digit */
-	if (namelen >= sizeof(name1)) {
+	namelen = strnlen(name, sizeof(name1)+1) + 1; /* add digit */
+	if (namelen > sizeof(name1)) {
 		printf("veth interface name too long\n");
 		return -1;
 	}
@@ -356,7 +357,7 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 	snprintf(name2, sizeof(name2), "%s2", name);
 
 	/* set interface 1 name,  namelen+(null terminator)*/
-	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name1, namelen+1) == NULL)
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name1, namelen) == NULL)
 		goto attr_fail;
 	/* nest linkinfo */
 	linkinfo = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINKINFO, NULL, 0);
@@ -375,7 +376,7 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 	/* peer interface info header, all zero's in this case */
 	req->hdr.nlmsg_len += sizeof(struct ifinfomsg);
 	/* set interface 2 name */
-	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name2, namelen+1) == NULL)
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name2, namelen) == NULL)
 		goto attr_fail;
 
 	/* update attribute nest lengths */
@@ -403,12 +404,12 @@ static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 		printf("no master interface\n");
 		return -1;
 	}
-	namelen = strnlen(name, IFNAMSIZ);
-	if (namelen >= IFNAMSIZ || namelen == 0) {
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ || namelen == 0) {
 		printf("bad name\n");
 		return -1;
 	}
-	if (strnlen(master, IFNAMSIZ) >= IFNAMSIZ) {
+	if (strnlen(master, IFNAMSIZ+1) > IFNAMSIZ) {
 		printf("bad master name\n");
 		return -1;
 	}
@@ -424,7 +425,7 @@ static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 				&mindex, sizeof(mindex)) == NULL)
 		goto attr_fail;
 	/* set interface name,  namelen+(null terminator)*/
-	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name, namelen+1) == NULL)
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name, namelen) == NULL)
 		goto attr_fail;
 	/* nest linkinfo */
 	linkinfo = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINKINFO, NULL, 0);
@@ -506,4 +507,77 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 	}
 	/* send netlink message */
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
+}
+
+
+int eslib_rtnetlink_linksetns(char *name, pid_t target)
+{
+	struct rtnl_iface_req req;
+	struct timespec t;
+	unsigned int seqnum;
+	unsigned int namelen;
+
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+
+	memset(&req, 0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	/* msg header */
+	req.hdr.nlmsg_type    = RTM_NEWLINK;
+	req.hdr.nlmsg_flags   = NLM_F_ACK|NLM_F_REQUEST;
+	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_seq     = seqnum;
+	req.ifmsg.ifi_family  = AF_UNSPEC;
+	req.ifmsg.ifi_index   = if_nametoindex(name);
+	if (req.ifmsg.ifi_index == 0) {
+		printf("could not get index for interface: %s\n", name);
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFLA_NET_NS_PID, &target, 4) == NULL) {
+		printf("addattr fail\n");
+		return -1;
+	}
+
+
+	return nlmsg_send(&req, req.hdr.nlmsg_len);
+}
+
+int eslib_rtnetlink_linksetname(char *name, char *newname)
+{
+	/* can we do this with netlink? */
+	struct ifreq req;
+	int fd;
+	if (strnlen(name, IFNAMSIZ+1) > IFNAMSIZ) {
+		printf("name too long\n");
+		return -1;
+	}
+	if (strnlen(newname, IFNAMSIZ+1) > IFNAMSIZ) {
+		printf("name too long\n");
+		return -1;
+	}
+	memset(&req, 0, sizeof(req));
+	strncpy(req.ifr_name, name, IFNAMSIZ);
+	strncpy(req.ifr_newname, newname, IFNAMSIZ);
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd == -1) {
+		fd = socket(AF_PACKET, SOCK_DGRAM, 0);
+		if (fd == -1) {
+			fd = socket(AF_INET6, SOCK_DGRAM, 0);
+			if (fd == -1) {
+				printf("couldn't open socket\n");
+				return -1;
+			}
+		}
+	}
+	if (ioctl(fd, SIOCSIFNAME, &req)) {
+		printf("SIOCSIFNAME: %s\n", strerror(errno));
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	return 0;
 }
