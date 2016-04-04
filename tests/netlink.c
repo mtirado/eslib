@@ -103,8 +103,10 @@ static int test_ipvlan()
 	}
 	if (read(ipc[0], &c, 1) != 1) {
 		printf("ipc\n");
+		close(ipc);
 		return -1;
 	}
+	close(ipc);
 	eslib_rtnetlink_linksetns("blaah", p);
 	rtnetlink_checkret(r);
 	if (waitpid(p, &status, 0) != p) {
