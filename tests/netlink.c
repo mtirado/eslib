@@ -92,21 +92,23 @@ static int test_ipvlan()
 	{
 		const char k = 'K';
 		if (unshare(CLONE_NEWNET))
-			return -1;
+			_exit(-1);
 		write(ipc[1], &k, 1);
 		printf("    newnetns forked.\n");
 		usleep(700000);
 		printf("deleting blaaah\n");
 		eslib_rtnetlink_linkdel("blaah");
 		rtnetlink_checkret(r);
-		return 0;
+		_exit(0);
 	}
 	if (read(ipc[0], &c, 1) != 1) {
 		printf("ipc\n");
-		close(ipc);
+		close(ipc[0]);
+		close(ipc[1]);
 		return -1;
 	}
-	close(ipc);
+	close(ipc[0]);
+	close(ipc[1]);
 	eslib_rtnetlink_linksetns("blaah", p);
 	rtnetlink_checkret(r);
 	if (waitpid(p, &status, 0) != p) {
