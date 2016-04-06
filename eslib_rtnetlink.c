@@ -34,6 +34,12 @@ struct rtnl_addr_req {
 	struct ifaddrmsg addrmsg;
 	char buf[BUFSIZE];
 };
+/* route request */
+struct rtnl_rt_req {
+	struct nlmsghdr hdr;
+	struct rtmsg rtmsg;
+	char buf[BUFSIZE];
+};
 
 /* open netlink connection */
 static int netlink_open(int protocol)
@@ -224,7 +230,8 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 {
 	struct rtnl_addr_req req;
 	struct timespec t;
-	struct in_addr ipaddr;
+	__u32 ipaddr;
+	__u32 bcast;
 	const unsigned int bytelen = 4;
 	unsigned int seqnum;
 	unsigned int namelen;
@@ -247,11 +254,19 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 		printf("bad ipv4 address\n");
 		return -1;
 	}
+	memcpy(&bcast, &ipaddr, sizeof(bcast));
+	if (prefix_len < 31) {
+		int i;
+		for (i = 31; i >= prefix_len; --i)
+		{
+			bcast |= htonl(1<<(31-i));
+		}
+	}
 
 	/* msg header */
 	req.hdr.nlmsg_type  = RTM_NEWADDR;
 	req.hdr.nlmsg_flags = NLM_F_CREATE|NLM_F_EXCL|NLM_F_ACK|NLM_F_REQUEST;
-	req.hdr.nlmsg_len   = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	req.hdr.nlmsg_len   = NLMSG_LENGTH(sizeof(req.addrmsg));
 	req.hdr.nlmsg_seq   = seqnum;
 	req.addrmsg.ifa_family    = AF_INET; /*32bit*/
 	req.addrmsg.ifa_index     = if_nametoindex(name);
@@ -266,6 +281,10 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 		return -1;
 	}
 	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_ADDRESS, &ipaddr, bytelen) == NULL) {
+		printf("adattr failed\n");
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_BROADCAST, &bcast, bytelen) == NULL) {
 		printf("adattr failed\n");
 		return -1;
 	}
@@ -290,7 +309,7 @@ int eslib_rtnetlink_linkset(char *name, int up)
 	/* msg header */
 	req.hdr.nlmsg_type    = RTM_NEWLINK;
 	req.hdr.nlmsg_flags   = NLM_F_ACK|NLM_F_REQUEST;
-	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq     = seqnum;
 	req.ifmsg.ifi_family  = AF_UNSPEC;
 	req.ifmsg.ifi_index   = if_nametoindex(name);
@@ -328,7 +347,7 @@ int eslib_rtnetlink_linkdel(char *name)
 	/* msg header */
 	req.hdr.nlmsg_type   = RTM_DELLINK;
 	req.hdr.nlmsg_flags  = NLM_F_ACK|NLM_F_REQUEST;
-	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq    = seqnum;
 	req.ifmsg.ifi_family = AF_UNSPEC;
 	req.ifmsg.ifi_index  = if_nametoindex(name);
@@ -374,7 +393,7 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 	if (infopeer == NULL)
 		goto attr_fail;
 	/* peer interface info header, all zero's in this case */
-	req->hdr.nlmsg_len += sizeof(struct ifinfomsg);
+	req->hdr.nlmsg_len += sizeof(req->ifmsg);
 	/* set interface 2 name */
 	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name2, namelen) == NULL)
 		goto attr_fail;
@@ -484,7 +503,7 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 	memset(&req, 0, sizeof(req));
 	req.hdr.nlmsg_type   = RTM_NEWLINK;
 	req.hdr.nlmsg_flags  = NLM_F_REQUEST|NLM_F_EXCL|NLM_F_CREATE|NLM_F_ACK;
-	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq    = seqnum;
 	req.ifmsg.ifi_family = AF_UNSPEC;
 
@@ -529,7 +548,7 @@ int eslib_rtnetlink_linksetns(char *name, pid_t target)
 	/* msg header */
 	req.hdr.nlmsg_type    = RTM_NEWLINK;
 	req.hdr.nlmsg_flags   = NLM_F_ACK|NLM_F_REQUEST;
-	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq     = seqnum;
 	req.ifmsg.ifi_family  = AF_UNSPEC;
 	req.ifmsg.ifi_index   = if_nametoindex(name);
@@ -580,4 +599,53 @@ int eslib_rtnetlink_linksetname(char *name, char *newname)
 	}
 	close(fd);
 	return 0;
+}
+
+int eslib_rtnetlink_linkgateway(char *name, char *addr)
+{
+	struct rtnl_rt_req req;
+	struct timespec t;
+	unsigned int seqnum;
+	unsigned int namelen;
+	__u32 gwaddr;
+	__u32 idx;
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+
+	if (inet_pton(AF_INET, addr, &gwaddr) <= 0) {
+		printf("bad ipv4 gateway address\n");
+		return -1;
+	}
+	memset(&req, 0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	/* msg header */
+	req.hdr.nlmsg_type     = RTM_NEWROUTE;
+	req.hdr.nlmsg_flags    = NLM_F_ACK|NLM_F_REQUEST|NLM_F_CREATE|NLM_F_EXCL;
+	req.hdr.nlmsg_len      = NLMSG_LENGTH(sizeof(req.rtmsg));
+	req.hdr.nlmsg_seq      = seqnum;
+	req.rtmsg.rtm_family   = AF_INET;
+	req.rtmsg.rtm_table    = RT_TABLE_MAIN;
+	req.rtmsg.rtm_scope    = RT_SCOPE_UNIVERSE;
+	req.rtmsg.rtm_type     = RTN_UNICAST;
+	req.rtmsg.rtm_protocol = RTPROT_BOOT;
+	idx = if_nametoindex(name);
+	if (idx == 0) {
+		printf("could not get index for interface: %s\n", name);
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), RTA_GATEWAY, &gwaddr, 4) == NULL) {
+		printf("addattr fail\n");
+		return -1;
+	}
+	if (nlmsg_addattr(&req.hdr, sizeof(req), RTA_OIF, &idx, 4) == NULL) {
+		printf("addattr fail\n");
+		return -1;
+	}
+
+
+	return nlmsg_send(&req, req.hdr.nlmsg_len);
 }

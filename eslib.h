@@ -261,6 +261,7 @@ int eslib_rtnetlink_linkset(char *name, int up);
 int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
 int eslib_rtnetlink_linksetns(char *name, pid_t target);
 int eslib_rtnetlink_linksetname(char *name, char *newname);
+int eslib_rtnetlink_linkgateway(char *name, char *addr);
 
 /* =====================================
  * 		macros
