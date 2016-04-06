@@ -6,7 +6,7 @@
 
 #include <sys/types.h>
 #ifndef MAX_SYSTEMPATH
-	#define MAX_SYSTEMPATH 4096
+	#define MAX_SYSTEMPATH 2048
 #endif
 
 #define ESLIB_LOG_MAXMSG 1024
@@ -17,8 +17,9 @@
 
 #define RTNL_KIND_INVALID 0
 #define RTNL_KIND_UNKNOWN 1
-#define RTNL_KIND_VETH    2
-#define RTNL_KIND_IPVLAN  3
+#define RTNL_KIND_LOOP    2
+#define RTNL_KIND_VETH    3
+#define RTNL_KIND_IPVLAN  4
 
 /* =====================================
  * 		sockets
