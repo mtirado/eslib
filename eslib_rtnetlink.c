@@ -16,12 +16,25 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include "eslib.h"
+#include "eslib_rtnetlink.h"
 
-#define  BUFSIZE (1024 * 16) /* 16KB XXX MSG_TRUNC is unhandled,
+#define  BUFSIZE (1024 * 32) /* 32KB XXX MSG_TRUNC is unhandled,
 				increase buffer if this is an issue... */
 /* gets next aligned attr location */
 #define NLMSG_TAIL(nmsg) \
 	((struct rtattr *)(((char *)(nmsg)) + NLMSG_ALIGN((nmsg)->nlmsg_len)))
+/* set values */
+void rtnl_decode_setinput(struct rtnl_decode_io *dio, void *ptr, __u32 size)
+{
+	dio->in = ptr;
+	dio->insize = size;
+}
+void rtnl_decode_setoutput(struct rtnl_decode_io *dio, void *ptr, __u32 size)
+{
+	dio->out = ptr;
+	dio->outsize = size;
+}
+
 /* interface request */
 struct rtnl_iface_req {
 	struct nlmsghdr hdr;
@@ -37,9 +50,10 @@ struct rtnl_addr_req {
 /* route request */
 struct rtnl_rt_req {
 	struct nlmsghdr hdr;
-	struct rtmsg rtmsg;
+	struct rtmsg rmsg;
 	char buf[BUFSIZE];
 };
+
 
 /* open netlink connection */
 static int netlink_open(int protocol)
@@ -108,7 +122,54 @@ static int nlmsg_nest_end(struct nlmsghdr *nlmsg, struct rtattr *start)
 	start->rta_len = (char *)NLMSG_TAIL(nlmsg) - (char *)start;
 	return 0;
 }
-
+/* blocks */
+static int nlmsg_do_send(int nlfd, void *req, unsigned int size)
+{
+	int r;
+	if (size > BUFSIZE || req == NULL)
+		return -1;
+	/* send request */
+	while (1)
+	{
+		errno = 0;
+		r = send(nlfd, req, size, 0);
+		if (r == -1 && errno == EINTR)
+			continue;
+		else if ((unsigned int)r == size)
+			return 0;
+		else if (r <= 0) {
+			printf("rtnl send: %s\n", strerror(errno));
+			return -1;
+		}
+		else {
+			printf("rtnl send returned unexpected size\n");
+			return -1;
+		}
+	}
+}
+/* also blocks */
+static int nlmsg_do_recv(int nlfd, char *buf, unsigned int size)
+{
+	int r;
+	if (size > BUFSIZE || buf == NULL)
+		return -1;
+	while(1)
+	{
+		r = recv(nlfd, buf, BUFSIZE, 0);
+		if (r == -1 && errno == EINTR)
+			continue;
+		else if (r > 0 && (unsigned int)r < BUFSIZE)
+			return r;
+		else if (r == -1) {
+			printf("recv error: %s\n", strerror(errno));
+			return -1;
+		}
+		else {
+			printf("recv error(%d).\n", r);
+			return -1;
+		}
+	}
+}
 /* if NLM_F_ACK flag is set, kernel attaches ack as first nlmsghdr returned */
 #define ACKSIZE (sizeof(struct nlmsghdr) + sizeof(unsigned int))
 /* blocks until sent, checks for valid ack */
@@ -133,26 +194,8 @@ static int nlmsg_send(void *req, unsigned int size)
 		goto fail;
 	}
 
-	/* send request */
-	while (1)
-	{
-		errno = 0;
-		r = send(nlfd, req, size, 0);
-		if (r == -1 && errno == EINTR) {
-			continue;
-		}
-		else if (r <= 0) {
-			printf("rtnl sendmsg: %s\n", strerror(errno));
-			goto fail;
-		}
-		else if ((unsigned int)r == size) {
-			break;
-		}
-		else {
-			printf("send size error\n");
-			goto fail;
-		}
-	}
+	if (nlmsg_do_send(nlfd, req, size))
+		goto fail;
 
 	/* recv netlink ACK */
 	while (1)
@@ -232,7 +275,6 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 	struct timespec t;
 	__u32 ipaddr;
 	__u32 bcast;
-	const unsigned int bytelen = 4;
 	unsigned int seqnum;
 	unsigned int namelen;
 
@@ -276,15 +318,15 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 		printf("could not get index for interface: %s\n", name);
 		return -1;
 	}
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_LOCAL, &ipaddr, bytelen) == NULL) {
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_LOCAL, &ipaddr, 4) == NULL) {
 		printf("adattr failed\n");
 		return -1;
 	}
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_ADDRESS, &ipaddr, bytelen) == NULL) {
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_ADDRESS, &ipaddr, 4) == NULL) {
 		printf("adattr failed\n");
 		return -1;
 	}
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_BROADCAST, &bcast, bytelen) == NULL) {
+	if (nlmsg_addattr(&req.hdr, sizeof(req), IFA_BROADCAST, &bcast, 4) == NULL) {
 		printf("adattr failed\n");
 		return -1;
 	}
@@ -375,7 +417,7 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 	snprintf(name1, sizeof(name1), "%s1", name);
 	snprintf(name2, sizeof(name2), "%s2", name);
 
-	/* set interface 1 name,  namelen+(null terminator)*/
+	/* set interface 1 name */
 	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name1, namelen) == NULL)
 		goto attr_fail;
 	/* nest linkinfo */
@@ -601,7 +643,7 @@ int eslib_rtnetlink_linksetname(char *name, char *newname)
 	return 0;
 }
 
-int eslib_rtnetlink_linkgateway(char *name, char *addr)
+int eslib_rtnetlink_setgateway(char *name, char *addr)
 {
 	struct rtnl_rt_req req;
 	struct timespec t;
@@ -625,13 +667,13 @@ int eslib_rtnetlink_linkgateway(char *name, char *addr)
 	/* msg header */
 	req.hdr.nlmsg_type     = RTM_NEWROUTE;
 	req.hdr.nlmsg_flags    = NLM_F_ACK|NLM_F_REQUEST|NLM_F_CREATE|NLM_F_EXCL;
-	req.hdr.nlmsg_len      = NLMSG_LENGTH(sizeof(req.rtmsg));
+	req.hdr.nlmsg_len      = NLMSG_LENGTH(sizeof(req.rmsg));
 	req.hdr.nlmsg_seq      = seqnum;
-	req.rtmsg.rtm_family   = AF_INET;
-	req.rtmsg.rtm_table    = RT_TABLE_MAIN;
-	req.rtmsg.rtm_scope    = RT_SCOPE_UNIVERSE;
-	req.rtmsg.rtm_type     = RTN_UNICAST;
-	req.rtmsg.rtm_protocol = RTPROT_BOOT;
+	req.rmsg.rtm_family    = AF_INET;
+	req.rmsg.rtm_table     = RT_TABLE_MAIN;
+	req.rmsg.rtm_scope     = RT_SCOPE_UNIVERSE;
+	req.rmsg.rtm_type      = RTN_UNICAST;
+	req.rmsg.rtm_protocol  = RTPROT_BOOT;
 	idx = if_nametoindex(name);
 	if (idx == 0) {
 		printf("could not get index for interface: %s\n", name);
@@ -646,6 +688,211 @@ int eslib_rtnetlink_linkgateway(char *name, char *addr)
 		return -1;
 	}
 
-
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
+}
+
+#define RTA_COUNT __RTA_MAX
+static int rtnetlink_copy_attrtbl(struct rtattr *tbl[],
+				  struct rtattr *rta, unsigned int max)
+{
+	unsigned short type;
+
+	memset(tbl, 0, sizeof(struct rtattr *) * RTA_COUNT);
+	while(RTA_OK(rta, max))
+	{
+		type = rta->rta_type;
+		if (type >= RTA_COUNT) {
+			printf("unexpected type: %d\n", type);
+			return -1;
+		}
+		if (tbl[type] == NULL) {
+			tbl[type] = rta;
+		}
+		rta = RTA_NEXT(rta, max);
+	}
+	return 0;
+}
+
+int eslib_rtnetlink_dump(char *name, int type,
+			 rtnl_decode_callback decode,
+			 struct rtnl_decode_io *dio)
+{
+	struct {
+		struct nlmsghdr hdr;
+		struct ifinfomsg ifmsg;
+		struct rtattr ext __attribute__ ((aligned(NLMSG_ALIGNTO)));
+		__u32 ext_filter_mask;
+	} req;
+	char buf[BUFSIZE];
+	struct timespec t;
+	struct nlmsghdr *msg;
+	unsigned int seqnum;
+	unsigned int namelen;
+	int nlfd;
+	int msgsize;
+	int intr = 0;
+
+	if (decode == NULL || dio == NULL)
+		return -1;
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+
+	nlfd = netlink_open(NETLINK_ROUTE);
+	if (nlfd == -1) {
+		printf("couldn't open netlink socket\n");
+		return -1;
+	}
+
+	errno = 0;
+	memset(buf,  0, sizeof(buf));
+	memset(&req, 0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	/* msg header */
+	req.hdr.nlmsg_type     = type;
+	req.hdr.nlmsg_flags    = NLM_F_DUMP|NLM_F_REQUEST;
+	req.hdr.nlmsg_len      = sizeof(req);
+	req.hdr.nlmsg_seq      = seqnum;
+	req.ifmsg.ifi_family   = AF_INET;
+	req.ext.rta_type       = IFLA_EXT_MASK;
+	req.ext.rta_len	       = RTA_LENGTH(4);
+	req.ext_filter_mask    = RTEXT_FILTER_VF;
+	if (nlmsg_do_send(nlfd, &req, req.hdr.nlmsg_len))
+		goto close_err;
+
+	msgsize = nlmsg_do_recv(nlfd, buf, sizeof(buf));
+	if (msgsize <= 0 || (unsigned int)msgsize > sizeof(buf)) {
+		printf("recv linkdump failure\n");
+		goto close_err;
+	}
+	close(nlfd);
+	msg = (struct nlmsghdr *)buf;
+	if (msg->nlmsg_seq != seqnum) {
+		printf("seqnum mismatch %d %d\n", msg->nlmsg_seq, seqnum);
+		return -1;
+	}
+	/* parse */
+	while(NLMSG_OK(msg, msgsize))
+	{
+		struct rtmsg *rtm;
+		struct rtattr *tbl[RTA_COUNT];
+		unsigned int size;
+		if (msg->nlmsg_flags & NLM_F_DUMP_INTR)
+			intr = 1;
+		if (msg->nlmsg_type == NLMSG_DONE) {
+			printf("NLMSG_DONE\n");
+			break;
+		}
+		if (msg->nlmsg_type == NLMSG_ERROR) {
+			printf("NLMSG_ERROR\n");
+			return -1;
+		}
+		if (msg->nlmsg_type != RTM_NEWROUTE && msg->nlmsg_type != RTM_DELROUTE) {
+			printf("unexpected nlmsg_type: %d\n", msg->nlmsg_type);
+			return -1;
+		}
+
+		/* prepare rtmsg and rtattr table for decoding */
+		rtm = NLMSG_DATA(msg);
+		size = msg->nlmsg_len - NLMSG_LENGTH(sizeof(struct rtmsg));
+		if (size <= 0) {
+			printf("bad nlmsg_len\n");
+			return -1;
+		}
+		if (rtnetlink_copy_attrtbl(tbl, RTM_RTA(rtm), size)) {
+			printf("copy_attrtbl failed\n");
+			return -1;
+		}
+		/* decode callback */
+		if (decode(rtm, tbl, dio)) {
+			printf("decode error\n");
+			return -1;
+		}
+
+		msg = NLMSG_NEXT(msg, msgsize);
+	}
+
+	if (intr)
+	{
+		printf("dump was interrupted\n");
+		errno = EAGAIN;
+		return -1;
+	}
+	if (msgsize) {
+		printf("unexpected leftover bytes: %d\n", msgsize);
+		_exit(-1);
+	}
+
+	return 0;
+
+close_err:
+	close(nlfd);
+	return -1;
+}
+
+#define GWSIZE 16
+int decode_gateway(struct rtmsg *rtm, struct rtattr *tbl[RTA_COUNT],
+		   struct rtnl_decode_io *dio)
+{
+	char gateway[GWSIZE];
+	int ifidx;
+
+	if (rtm == NULL || tbl == NULL)
+		return -1;
+	if (dio->outsize < GWSIZE)
+		return -1;
+
+	memcpy(&ifidx, dio->in, sizeof(ifidx));
+
+	/* GW decode */
+	if (rtm->rtm_family != AF_INET) {
+		printf("NOT AF_INET\r\n");
+		return 0;
+	}
+	if (tbl[RTA_GATEWAY]) {
+		int oif = 0;
+		if (tbl[RTA_OIF])
+			memcpy(&oif, (int *)RTA_DATA(tbl[RTA_OIF]), sizeof(int));
+		else
+			return 0;
+		if (oif != ifidx)
+			return 0;
+
+		if (inet_ntop(AF_INET, RTA_DATA(tbl[RTA_GATEWAY]),
+					gateway, sizeof(gateway)) == NULL) {
+			printf("inet_ntop: %s\n", strerror(errno));
+			return -1;
+		}
+		gateway[GWSIZE-1] = '\0';
+		memcpy(dio->out, gateway, GWSIZE);
+	}
+
+	return 0;
+}
+
+char g_gateway[GWSIZE];
+char *eslib_rtnetlink_getgateway(char *name)
+{
+	struct rtnl_decode_io dio;
+	__u32 idx;
+
+	memset(&g_gateway, 0, GWSIZE);
+	memset(&dio, 0, sizeof(dio));
+	idx = if_nametoindex(name);
+	if (idx == 0) {
+		printf("could not get index for interface: %s\n", name);
+		return NULL;
+	}
+
+	rtnl_decode_setinput(&dio, &idx, sizeof(idx));
+	rtnl_decode_setoutput(&dio, g_gateway, GWSIZE);
+
+	if (eslib_rtnetlink_dump(name, RTM_GETROUTE, &decode_gateway, &dio)) {
+		printf("dump request failed\n");
+		return NULL;
+	}
+	return g_gateway;
 }
