@@ -727,7 +727,7 @@ static int rtnetlink_copy_attrtbl(struct rtattr *tbl[],
 	return 0;
 }
 
-int eslib_rtnetlink_dump(char *name, int type, struct rtnl_decode_io *dio)
+int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, char *name, int type)
 {
 	struct {
 		struct nlmsghdr hdr;
@@ -903,7 +903,7 @@ char *eslib_rtnetlink_getgateway(char *name)
 	rtnl_decode_setinput(&dio, &idx, sizeof(idx));
 	rtnl_decode_setoutput(&dio, g_gateway, GWSIZE);
 
-	if (eslib_rtnetlink_dump(name, RTM_GETROUTE, &dio)) {
+	if (eslib_rtnetlink_dump(&dio, name, RTM_GETROUTE)) {
 		printf("dump request failed\n");
 		return NULL;
 	}

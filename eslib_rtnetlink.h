@@ -25,5 +25,5 @@ void rtnl_decode_setoutput(struct rtnl_decode_io *dio, void *v, __u32 size);
 int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize);
 
 /* returns -1 and errno set to EAGAIN if dump was interrupted */
-int eslib_rtnetlink_dump(char *name, int type, struct rtnl_decode_io *dio);
+int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, char *name, int type);
 #endif
