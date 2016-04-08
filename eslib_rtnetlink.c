@@ -34,6 +34,20 @@ void rtnl_decode_setoutput(struct rtnl_decode_io *dio, void *ptr, __u32 size)
 	dio->out = ptr;
 	dio->outsize = size;
 }
+void rtnl_decode_setcallback(struct rtnl_decode_io *dio, rtnl_decode_callback decode)
+{
+	dio->decode = decode;
+}
+int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize)
+{
+	if (dio == NULL || dio->decode == NULL)
+		return -1;
+	if (dio->in && dio->insize < insize)
+	       return -1;
+	if (dio->out && dio->outsize < outsize)
+		return -1;
+	return 0;
+}
 
 /* interface request */
 struct rtnl_iface_req {
@@ -713,9 +727,7 @@ static int rtnetlink_copy_attrtbl(struct rtattr *tbl[],
 	return 0;
 }
 
-int eslib_rtnetlink_dump(char *name, int type,
-			 rtnl_decode_callback decode,
-			 struct rtnl_decode_io *dio)
+int eslib_rtnetlink_dump(char *name, int type, struct rtnl_decode_io *dio)
 {
 	struct {
 		struct nlmsghdr hdr;
@@ -732,7 +744,7 @@ int eslib_rtnetlink_dump(char *name, int type,
 	int msgsize;
 	int intr = 0;
 
-	if (decode == NULL || dio == NULL)
+	if (dio == NULL)
 		return -1;
 	namelen = strnlen(name, IFNAMSIZ+1);
 	if (namelen > IFNAMSIZ) {
@@ -807,7 +819,7 @@ int eslib_rtnetlink_dump(char *name, int type,
 			return -1;
 		}
 		/* decode callback */
-		if (decode(rtm, tbl, dio)) {
+		if (dio->decode(rtm, tbl, dio)) {
 			printf("decode error\n");
 			return -1;
 		}
@@ -842,7 +854,7 @@ int decode_gateway(struct rtmsg *rtm, struct rtattr *tbl[RTA_COUNT],
 
 	if (rtm == NULL || tbl == NULL)
 		return -1;
-	if (dio->outsize < GWSIZE)
+	if (rtnl_decode_check(dio, sizeof(ifidx), sizeof(gateway)))
 		return -1;
 
 	memcpy(&ifidx, dio->in, sizeof(ifidx));
@@ -887,10 +899,11 @@ char *eslib_rtnetlink_getgateway(char *name)
 		return NULL;
 	}
 
+	rtnl_decode_setcallback(&dio, decode_gateway);
 	rtnl_decode_setinput(&dio, &idx, sizeof(idx));
 	rtnl_decode_setoutput(&dio, g_gateway, GWSIZE);
 
-	if (eslib_rtnetlink_dump(name, RTM_GETROUTE, &decode_gateway, &dio)) {
+	if (eslib_rtnetlink_dump(name, RTM_GETROUTE, &dio)) {
 		printf("dump request failed\n");
 		return NULL;
 	}
