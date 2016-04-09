@@ -5,9 +5,22 @@
 #ifndef __ESLIB_RTNETLINK_H_
 #define __ESLIB_RTNETLINK_H_
 
+#include <linux/types.h>
+
+#define RTNL_LINKDOWN 0
+#define RTNL_LINKUP   1
+
+#define RTNL_KIND_INVALID 0
+#define RTNL_KIND_UNKNOWN 1
+#define RTNL_KIND_LOOP    2
+#define RTNL_KIND_VETHBR  3
+#define RTNL_KIND_IPVLAN  4
+
+
 /* an abstract way of parsing rtnetlink device dump */
 struct rtnl_decode_io;
 struct rtattr;
+struct rtmsg;
 
 typedef int (*rtnl_decode_callback)(struct rtmsg *rtm,
 				    struct rtattr *tbl[],
@@ -26,4 +39,6 @@ int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize);
 
 /* returns -1 and errno set to EAGAIN if dump was interrupted */
 int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, char *name, int type);
+
+
 #endif

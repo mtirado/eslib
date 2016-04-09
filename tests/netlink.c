@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sched.h>
 #include "../eslib.h"
+#include "../eslib_rtnetlink.h"
 
 #define rtnetlink_checkret(r)		\
 if (r == -1){				\

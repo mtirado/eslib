@@ -12,15 +12,6 @@
 #define ESLIB_LOG_MAXMSG 1024
 #define ESLIB_MAX_PROCNAME 32
 
-#define RTNL_LINKDOWN 0
-#define RTNL_LINKUP   1
-
-#define RTNL_KIND_INVALID 0
-#define RTNL_KIND_UNKNOWN 1
-#define RTNL_KIND_LOOP    2
-#define RTNL_KIND_VETHBR  3
-#define RTNL_KIND_IPVLAN  4
-
 /* =====================================
  * 		sockets
  * =====================================
