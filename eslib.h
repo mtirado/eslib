@@ -18,7 +18,7 @@
 #define RTNL_KIND_INVALID 0
 #define RTNL_KIND_UNKNOWN 1
 #define RTNL_KIND_LOOP    2
-#define RTNL_KIND_VETH    3
+#define RTNL_KIND_VETHBR  3
 #define RTNL_KIND_IPVLAN  4
 
 /* =====================================

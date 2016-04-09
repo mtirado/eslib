@@ -543,7 +543,7 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 	}
 	printf("linknew(%s, %s, %s)\n", name, kind, (char *)typedat);
 	if (strncmp(kind, "veth", 4) == 0) {
-		devkind = RTNL_KIND_VETH;
+		devkind = RTNL_KIND_VETHBR;
 	}
 	else if (strncmp(kind, "ipvlan", 6) == 0) {
 		devkind = RTNL_KIND_IPVLAN;
@@ -566,7 +566,7 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 	switch (devkind)
 	{
 		/* these are basic ethernet socketpairs */
-	case RTNL_KIND_VETH:
+	case RTNL_KIND_VETHBR:
 		if (create_veth(&req, name))
 			return -1;
 		break;
