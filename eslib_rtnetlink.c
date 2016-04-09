@@ -468,6 +468,7 @@ attr_fail:
 	return -1;
 }
 
+#ifdef NEWNET_IPVLAN
 static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 {
 	struct rtattr *linkinfo, *infodata;
@@ -526,9 +527,10 @@ static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 	return 0;
 
 attr_fail:
-	printf("veth addattr failure\n");
+	printf("create ipvlan failure\n");
 	return -1;
 }
+#endif
 
 /* create a pair of veth devices <name>1 and <name>2 */
 int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
@@ -573,8 +575,12 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 		/* at a quick glance ipvlan seems to be the most simple
 		 * minimal solution, so let's start with this one. */
 	case RTNL_KIND_IPVLAN:
+#ifdef NEWNET_IPVLAN
 		if (create_ipvlan(&req, name, typedat))
 			return -1;
+#else
+		return -1;
+#endif
 		break;
 	default:
 		printf("switch default\n");
