@@ -246,16 +246,6 @@ int eslib_logmsg_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 
-int eslib_rtnetlink_linknew(char *name, char *type, void *typedat);
-int eslib_rtnetlink_linkdel(char *name);
-int eslib_rtnetlink_linkset(char *name, int up);
-int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
-int eslib_rtnetlink_linksetns(char *name, pid_t target);
-int eslib_rtnetlink_linksetname(char *name, char *newname);
-
-int eslib_rtnetlink_setgateway(char *name, char *addr);
-/* returns either NULL or pointer to a local gateway string */
-char *eslib_rtnetlink_getgateway(char *name);
 
 /* =====================================
  * 		macros
@@ -269,12 +259,6 @@ char *eslib_rtnetlink_getgateway(char *name);
 #define eslib_ms_elapsed(curtime_, start_, millisec_)		\
 	((curtime_.tv_sec - start_.tv_sec) * 1000		\
 	 + (curtime_.tv_usec - start_.tv_usec) / 1000 > millisec_ )
-
-
-
-
-
-
 
 
 #endif

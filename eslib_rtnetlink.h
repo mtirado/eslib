@@ -16,15 +16,19 @@
 #define RTNL_KIND_VETHBR  3
 #define RTNL_KIND_IPVLAN  4
 
+#define RTNL_DUMP_LINK      0
+#define RTNL_DUMP_LINK_INFO 1
+#define RTNL_DUMP_ROUTE	    2
 
 /* an abstract way of parsing rtnetlink device dump */
 struct rtnl_decode_io;
 struct rtattr;
-struct rtmsg;
 
-typedef int (*rtnl_decode_callback)(struct rtmsg *rtm,
+typedef int (*rtnl_decode_callback)(struct rtnl_decode_io *dio,
+				    void *msg, /* type specific struct */
+				    unsigned int msgsize,
 				    struct rtattr *tbl[],
-				    struct rtnl_decode_io *dio);
+				    unsigned int tblcount);
 struct rtnl_decode_io {
 	rtnl_decode_callback decode;
 	void *in;
@@ -32,13 +36,32 @@ struct rtnl_decode_io {
 	__u32 insize;
 	__u32 outsize;
 };
+
+/* set the dio function pointer */
 void rtnl_decode_setcallback(struct rtnl_decode_io *dio, rtnl_decode_callback decode);
+/* set input parameters */
 void rtnl_decode_setinput(struct rtnl_decode_io  *dio, void *v, __u32 size);
+/* set output parameters */
 void rtnl_decode_setoutput(struct rtnl_decode_io *dio, void *v, __u32 size);
-int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize);
-
+/* verify type specific data, and io parameters */
+int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize,
+			__u32 type, __u32 msgsize, __u32 tblcount);
 /* returns -1 and errno set to EAGAIN if dump was interrupted */
-int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, char *name, int type);
+int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type);
 
+/* return nested attr of specific type */
+struct rtattr *rtnetlink_get_attr(struct rtattr *attr, unsigned int bounds,
+                                  unsigned short rta_type);
+int eslib_rtnetlink_linknew(char *name, char *type, void *typedat);
+int eslib_rtnetlink_linkdel(char *name);
+int eslib_rtnetlink_linkset(char *name, int up);
+int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
+int eslib_rtnetlink_linksetns(char *name, pid_t target);
+int eslib_rtnetlink_linksetname(char *name, char *newname);
+int eslib_rtnetlink_nsenter(pid_t target);
+
+int eslib_rtnetlink_setgateway(char *name, char *addr);
+/* returns either NULL or pointer to a local gateway string */
+char *eslib_rtnetlink_getgateway(char *name);
 
 #endif
