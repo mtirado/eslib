@@ -364,7 +364,7 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
 }
 /* either up or down */
-int eslib_rtnetlink_linkset(char *name, int up)
+static int eslib_rtnetlink_linkset(char *name, int up)
 {
 	struct rtnl_iface_req req;
 	struct timespec t;
@@ -400,7 +400,14 @@ int eslib_rtnetlink_linkset(char *name, int up)
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
 
 }
-
+int eslib_rtnetlink_linksetup(char *name)
+{
+	return eslib_rtnetlink_linkset(name, 1);
+}
+int eslib_rtnetlink_linksetdown(char *name)
+{
+	return eslib_rtnetlink_linkset(name, 0);
+}
 /* delete link by name */
 int eslib_rtnetlink_linkdel(char *name)
 {

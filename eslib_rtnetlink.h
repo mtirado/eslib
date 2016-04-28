@@ -7,9 +7,6 @@
 
 #include <linux/types.h>
 
-#define ESRTNL_LINKDOWN 0
-#define ESRTNL_LINKUP   1
-
 #define ESRTNL_KIND_INVALID   0
 #define ESRTNL_KIND_UNKNOWN   1
 #define ESRTNL_KIND_LOOP      2
@@ -55,7 +52,8 @@ struct rtattr *rtnetlink_get_attr(struct rtattr *attr, unsigned int bounds,
                                   unsigned short rta_type);
 int eslib_rtnetlink_linknew(char *name, char *type, void *typedat);
 int eslib_rtnetlink_linkdel(char *name);
-int eslib_rtnetlink_linkset(char *name, int up);
+int eslib_rtnetlink_linksetup(char *name);
+int eslib_rtnetlink_linksetdown(char *name);
 int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
 int eslib_rtnetlink_linksetns(char *name, pid_t target);
 int eslib_rtnetlink_linksetname(char *name, char *newname);
