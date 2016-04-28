@@ -32,13 +32,13 @@ static int test_veth()
 	printf("blarg1 set up\n");
 	usleep(100000);
 
-	r = eslib_rtnetlink_linkset("blarg1", RTNL_LINKUP);
+	r = eslib_rtnetlink_linkset("blarg1", ESRTNL_LINKUP);
 	rtnetlink_checkret(r);
 
 	printf("blarg2 set up\n");
 	usleep(50000);
 
-	r = eslib_rtnetlink_linkset("blarg2", RTNL_LINKUP);
+	r = eslib_rtnetlink_linkset("blarg2", ESRTNL_LINKUP);
 	rtnetlink_checkret(r);
 
 	printf("setting blarg1 ip addr 10.0.0.1/24\n");

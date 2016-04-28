@@ -222,8 +222,10 @@ static int nlmsg_send(void *req, unsigned int size)
 		goto fail;
 	}
 
-	if (nlmsg_do_send(nlfd, req, size))
+	if (nlmsg_do_send(nlfd, req, size)) {
+		printf("send error\r\n");
 		goto fail;
+	}
 
 	/* recv netlink ACK */
 	while (1)
@@ -285,9 +287,10 @@ static int nlmsg_send(void *req, unsigned int size)
 		goto fail;
 	}
 
-	/* proper NACK */
+	/* proper NACK, return error code */
 	close(nlfd);
-	return 1;
+	printf("reterning error code: %d\r\n", ack_err);
+	return -ack_err;
 fail:
 	close(nlfd);
 	return -1;
@@ -544,6 +547,67 @@ attr_fail:
 	return -1;
 }
 #endif
+#ifdef NEWNET_MACVLAN
+static int create_macvlan(struct rtnl_iface_req *req, char *name, char *master)
+{
+	struct rtattr *linkinfo;/*, *infodata;*/
+	unsigned int namelen;
+	__u32 mindex;
+	/*__u16 mode = MACVLAN_MODE_PASSTHRU;*/
+	if (master == NULL || *master == '\0') {
+		printf("no master interface\n");
+		return -1;
+	}
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ || namelen == 0) {
+		printf("bad name\n");
+		return -1;
+	}
+	if (strnlen(master, IFNAMSIZ+1) > IFNAMSIZ) {
+		printf("bad master name\n");
+		return -1;
+	}
+
+	mindex = if_nametoindex(master);
+	if (mindex == 0) {
+		printf("error, master interface(%s): %s\n", master, strerror(errno));
+		return -1;
+	}
+
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINK,
+				&mindex, sizeof(mindex)) == NULL)
+		goto attr_fail;
+	/* set interface name */
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name, namelen) == NULL)
+		goto attr_fail;
+	/* nest linkinfo */
+	linkinfo = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_LINKINFO, NULL, 0);
+	if (linkinfo == NULL)
+		goto attr_fail;
+	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_KIND, "macvlan", 7) == NULL)
+		goto attr_fail;
+	/* nest info data */
+	/*infodata = nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_INFO_DATA, NULL, 0);
+	if (infodata == NULL)
+		goto attr_fail;
+	*//* set mode */
+	/*if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_MACVLAN_MODE,
+				&mode, sizeof(mode)) == NULL)
+		goto attr_fail;
+	*/
+	/* update nest lengths */
+	/*if (nlmsg_nest_end(&req->hdr, infodata))
+		goto attr_fail;
+	*/if (nlmsg_nest_end(&req->hdr, linkinfo))
+		goto attr_fail;
+
+	return 0;
+
+attr_fail:
+	printf("create macvlan failure\n");
+	return -1;
+}
+#endif
 
 int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 {
@@ -556,10 +620,13 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 		return -1;
 	}
 	if (strncmp(kind, "veth", 4) == 0) {
-		devkind = RTNL_KIND_VETHBR;
+		devkind = ESRTNL_KIND_VETHBR;
 	}
 	else if (strncmp(kind, "ipvlan", 6) == 0) {
-		devkind = RTNL_KIND_IPVLAN;
+		devkind = ESRTNL_KIND_IPVLAN;
+	}
+	else if (strncmp(kind, "macvlan", 7) == 0) {
+		devkind = ESRTNL_KIND_MACVLAN;
 	}
 	else {
 		printf("unknown kind: %s\n", kind);
@@ -578,11 +645,12 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 
 	switch (devkind)
 	{
-	case RTNL_KIND_VETHBR:
+	case ESRTNL_KIND_VETHBR:
 		if (create_veth(&req, name))
 			return -1;
 		break;
-	case RTNL_KIND_IPVLAN:
+/* ------------------------------------------------ */
+	case ESRTNL_KIND_IPVLAN:
 #ifdef NEWNET_IPVLAN
 		if (create_ipvlan(&req, name, typedat))
 			return -1;
@@ -590,6 +658,15 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 		return -1;
 #endif
 		break;
+	case ESRTNL_KIND_MACVLAN:
+#ifdef NEWNET_MACVLAN
+		if (create_macvlan(&req, name, typedat))
+			return -1;
+#else
+		return -1;
+#endif
+		break;
+/* ------------------------------------------------ */
 	default:
 		printf("switch default: %p\n", typedat);
 		return -1;

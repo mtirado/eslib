@@ -7,18 +7,19 @@
 
 #include <linux/types.h>
 
-#define RTNL_LINKDOWN 0
-#define RTNL_LINKUP   1
+#define ESRTNL_LINKDOWN 0
+#define ESRTNL_LINKUP   1
 
-#define RTNL_KIND_INVALID 0
-#define RTNL_KIND_UNKNOWN 1
-#define RTNL_KIND_LOOP    2
-#define RTNL_KIND_VETHBR  3
-#define RTNL_KIND_IPVLAN  4
+#define ESRTNL_KIND_INVALID   0
+#define ESRTNL_KIND_UNKNOWN   1
+#define ESRTNL_KIND_LOOP      2
+#define ESRTNL_KIND_VETHBR    3
+#define ESRTNL_KIND_IPVLAN    4
+#define ESRTNL_KIND_MACVLAN   5
 
-#define RTNL_DUMP_LINK      0
-#define RTNL_DUMP_LINK_INFO 1
-#define RTNL_DUMP_ROUTE	    2
+#define ESRTNL_DUMP_LINK      0
+#define ESRTNL_DUMP_LINK_INFO 1
+#define ESRTNL_DUMP_ROUTE     2
 
 /* an abstract way of parsing rtnetlink device dump */
 struct rtnl_decode_io;
