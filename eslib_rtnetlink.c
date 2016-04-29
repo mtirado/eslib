@@ -200,7 +200,11 @@ static int nlmsg_do_recv(int nlfd, char *buf, unsigned int size)
 }
 /* if NLM_F_ACK flag is set, kernel attaches ack as first nlmsghdr returned */
 #define ACKSIZE (sizeof(struct nlmsghdr) + sizeof(unsigned int))
-/* blocks until sent, checks for valid ack */
+/* blocks until sent, checks for valid ack
+ *
+ * returns 0 if ok, -1 on error
+ * on NACK, returns positive nlmsg error code and sets errno to this.
+ */
 static int nlmsg_send(void *req, unsigned int size)
 {
 	char buf[BUFSIZE+ACKSIZE];
@@ -210,6 +214,7 @@ static int nlmsg_send(void *req, unsigned int size)
 	unsigned int seqnum;
 	unsigned int ack_err;
 
+	errno = 0;
 	if (req == NULL)
 		return -1;
 
@@ -290,6 +295,7 @@ static int nlmsg_send(void *req, unsigned int size)
 	/* proper NACK, return error code */
 	close(nlfd);
 	printf("reterning error code: %d\r\n", ack_err);
+	errno = -ack_err;
 	return -ack_err;
 fail:
 	close(nlfd);
