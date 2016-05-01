@@ -294,7 +294,7 @@ static int nlmsg_send(void *req, unsigned int size)
 
 	/* proper NACK, return error code */
 	close(nlfd);
-	printf("reterning error code: %d\r\n", ack_err);
+	printf("returning error code: %d\r\n", ack_err);
 	errno = -ack_err;
 	return -ack_err;
 fail:
