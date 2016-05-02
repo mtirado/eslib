@@ -294,7 +294,6 @@ static int nlmsg_send(void *req, unsigned int size)
 
 	/* proper NACK, return error code */
 	close(nlfd);
-	printf("returning error code: %d\r\n", ack_err);
 	errno = -ack_err;
 	return -ack_err;
 fail:
@@ -688,7 +687,7 @@ int eslib_rtnetlink_linknew(char *name, char *kind, void *typedat)
 }
 
 
-int eslib_rtnetlink_linksetns(char *name, pid_t target)
+int eslib_rtnetlink_linksetns(char *name, __u32 target, int is_pid)
 {
 	struct rtnl_iface_req req;
 	struct timespec t;
@@ -715,7 +714,10 @@ int eslib_rtnetlink_linksetns(char *name, pid_t target)
 		printf("could not get index for interface: %s\n", name);
 		return -1;
 	}
-	if (nlmsg_addattr(&req.hdr, sizeof(req), IFLA_NET_NS_PID, &target, 4) == NULL) {
+	if (nlmsg_addattr(&req.hdr, sizeof(req),
+				is_pid ? IFLA_NET_NS_PID : IFLA_NET_NS_FD,
+				&target,
+				4) == NULL) {
 		printf("addattr fail\n");
 		return -1;
 	}
@@ -774,7 +776,7 @@ int eslib_rtnetlink_setgateway(char *name, char *addr)
 	}
 
 	if (inet_pton(AF_INET, addr, &gwaddr) <= 0) {
-		printf("bad ipv4 gateway address\n");
+		printf("bad ipv4 gateway address(%s)\n", addr);
 		return -1;
 	}
 	memset(&req, 0, sizeof(req));
