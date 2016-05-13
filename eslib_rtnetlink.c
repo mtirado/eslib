@@ -368,6 +368,91 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 	}
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
 }
+
+#define MAX_HWADDR 128
+int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
+{
+	char inbuf[MAX_HWADDR];
+	char outbuf[MAX_HWADDR];
+	struct rtnl_iface_req req;
+	struct timespec t;
+	unsigned int seqnum;
+	unsigned int namelen;
+	unsigned int addrlen;
+	unsigned int wrpos, rdpos, rdstart;
+
+	namelen = strnlen(name, IFNAMSIZ+1);
+	if (namelen > IFNAMSIZ) {
+		printf("name too long or no null terminator\n");
+		return -1;
+	}
+	addrlen = strnlen(hwaddr, MAX_HWADDR);
+	if (addrlen >= MAX_HWADDR) {
+		printf("hwaddr too long\n");
+		return -1;
+	}
+	memset(inbuf,  0, sizeof(inbuf));
+	memset(outbuf, 0, sizeof(outbuf));
+	strncpy(inbuf, hwaddr, MAX_HWADDR-1);
+	inbuf[MAX_HWADDR-1] = '\0';
+
+	memset(&req,   0, sizeof(req));
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	seqnum = (unsigned int)((t.tv_sec + t.tv_nsec)^getpid());
+	/* msg header */
+	req.hdr.nlmsg_type    = RTM_NEWLINK;
+	req.hdr.nlmsg_flags   = NLM_F_ACK|NLM_F_REQUEST;
+	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
+	req.hdr.nlmsg_seq     = seqnum;
+	req.ifmsg.ifi_family  = AF_UNSPEC;
+	req.ifmsg.ifi_index   = if_nametoindex(name);
+	if (req.ifmsg.ifi_index == 0) {
+		printf("could not get index for interface: %s\n", name);
+		return -1;
+	}
+
+	/* prepare address for kernel */
+	rdpos = 0;
+	wrpos = 0;
+	rdstart = 0;
+	while (rdpos < addrlen+1)
+	{
+		if (inbuf[rdpos] == ':' || inbuf[rdpos] == '\0') {
+			int brk = 0;
+			char *err = NULL;
+			long val;
+			int len = rdpos - rdstart;
+			if (len <= 0) {
+				return -1;
+			}
+			if (inbuf[rdpos] == '\0') {
+				brk = 1;
+			}
+			inbuf[rdpos] = '\0';
+			errno = 0;
+			val = strtol(&inbuf[rdstart], &err, 16);
+			if (err == NULL || *err || errno || val < 0 || val > 255) {
+				printf("bad hwaddress\n");
+				return -1;
+			}
+			outbuf[wrpos] = val;
+			rdstart = rdpos+1;
+			++wrpos;
+			if (brk)
+				break;
+		}
+		++rdpos;
+	}
+
+	addrlen = strnlen(outbuf, MAX_HWADDR);
+	if (addrlen >= MAX_HWADDR)
+		return -1;
+	if (nlmsg_addattr(&req.hdr, sizeof(req),IFLA_ADDRESS,outbuf,1+addrlen)==NULL)
+		return -1;
+	return nlmsg_send(&req, req.hdr.nlmsg_len);
+
+}
+
 /* either up or down */
 static int eslib_rtnetlink_linkset(char *name, int up)
 {

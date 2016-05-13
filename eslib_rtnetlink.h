@@ -57,6 +57,7 @@ int eslib_rtnetlink_linksetdown(char *name);
 int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len);
 int eslib_rtnetlink_linksetns(char *name, __u32 target, int is_pid);
 int eslib_rtnetlink_linksetname(char *name, char *newname);
+int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr);
 
 int eslib_rtnetlink_setgateway(char *name, char *addr);
 /* returns either NULL or pointer to a local gateway string */
