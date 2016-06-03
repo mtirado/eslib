@@ -55,6 +55,7 @@ int eslib_proc_getfds(pid_t pid, int **outlist)
 	char *err = NULL;
 	int *fdlist = NULL;
 
+	errno = 0;
 	if (!outlist)
 		return -1;
 	if (pid <= 0)
@@ -80,7 +81,8 @@ int eslib_proc_getfds(pid_t pid, int **outlist)
        	}
 	if (count == 0) {
 		closedir(dir);
-		return 0;
+		errno = ENOENT;
+		return -1;
 	}
 
 	fdlist = malloc(sizeof(int) * count);
