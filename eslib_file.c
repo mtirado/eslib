@@ -304,11 +304,14 @@ char *eslib_file_getname(char *path)
 	int len;
 	int i;
 
-	len = strnlen(path, MAX_SYSTEMPATH);
-	i = len;
-	if (len >= MAX_SYSTEMPATH)
+	if (path == NULL)
 		return NULL;
 
+	len = strnlen(path, MAX_SYSTEMPATH);
+	if (len >= MAX_SYSTEMPATH || len < 1)
+		return NULL;
+
+	i = len;
 	while (--i >= 0)
 	{
 		if (path[i] == '/') {
