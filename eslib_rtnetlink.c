@@ -4,12 +4,14 @@
 #define _GNU_SOURCE
 #include <linux/veth.h>
 #include <linux/if_addr.h>
-#include <netlink/netlink.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <sys/socket.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
