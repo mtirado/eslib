@@ -191,6 +191,8 @@ int eslib_proc_setenv(char *name, char *val)
 		}
 		++e;
 		++count;
+		if (count < 0)
+			return -1;
 	}
 
 	len = strlen(name) + 1 + strlen(val) + 1; /*name=val\0*/
@@ -208,16 +210,24 @@ int eslib_proc_setenv(char *name, char *val)
 		/* create new entry, alloc new list */
 		char **newenv;
 		int i;
-		if (!mallocd)
-			newenv = malloc(sizeof(char *) * (count + 2));
-		else
-			newenv = realloc(environ, sizeof(char *) * (count + 2));
+		int newsize = sizeof(char *) * (count + 2);
+		if (!mallocd) {
+			newenv = malloc(newsize);
+			if (newenv == NULL) {
+				free(str);
+				return -1;
+			}
+			for (i = 0; i < count; ++i)
+				newenv[i] = environ[i];
 
-		if (newenv == NULL)
-			return -1;
-
-		for (i = 0; i < count; ++i)
-			newenv[i] = environ[i];
+		}
+		else {
+			newenv = realloc(environ, newsize);
+			if (newenv == NULL) {
+				free(str);
+				return -1;
+			}
+		}
 
 		environ = newenv;
 		environ[count] = str;
