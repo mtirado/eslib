@@ -41,7 +41,9 @@ int *alloc_seccomp_sclist(char *file, unsigned int *outcount);
 int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklist);
 /* check if capability is globally blacklisted */
 int cap_blacklisted(unsigned long cap);
-/* call this after mnt namespace is unshared and if any chroot_path mounts are setup */
+/* call this after mnt namespace is unshared and if any chroot_path mounts are setup
+ * whitelist and blocklist should be terminated by -1
+ */
 int fortify(char *chroot_path,
 		 uid_t set_resuid, /* if these are 0, no setresuid call is made */
 		 gid_t set_resgid,
@@ -71,9 +73,7 @@ unsigned int count_syscalls(int *syscalls, unsigned int maxcount);
  *
  * arch: AUDIT_ARCH_I386, AUDIT_ARCH_X86_64, etc.
  */
-int filter_syscalls(int arch, int *whitelist, int *blocklist,
-		    unsigned int wcount, unsigned int bcount,
-		    unsigned int options, long retaction);
+int filter_syscalls(int *whitelist, int *blocklist, unsigned int options,long retaction);
 /* defstring should be the syscalls #define name,
  * e.g: "__NR_fork"
  * returns the value of the define, or -1 on error

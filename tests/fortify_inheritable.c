@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <sys/mount.h>
 #include <sys/prctl.h>
+#include <linux/unistd.h>
 #include <linux/capability.h>
 #include <linux/securebits.h>
 #include <fcntl.h>
@@ -49,14 +50,58 @@ int prntout()
 	printf("**********************************************************\n");
 	return 0;
 }
+int g_whitelist[] = {
+	__NR_waitpid,
+	__NR_write,
+	__NR_rt_sigaction,
+	__NR_read,
+	__NR_open,
+	__NR_close,
+	__NR_execve,
+	__NR_chdir,
+	__NR_time,
+	__NR_lseek,
+	__NR_mount,
+	__NR_access,
+	__NR_pipe,
+	__NR_brk,
+	__NR_ioctl,
+	__NR_setpgid,
+	__NR_chroot,
+	__NR_munmap,
+	__NR_sigreturn,
+	__NR_clone,
+	__NR_uname,
+	__NR_mprotect,
+	__NR_prctl,
+	__NR_rt_sigprocmask,
+	__NR_capset,
+	__NR_mmap2,
+	__NR_stat64,
+	__NR_fstat64,
+	__NR_getuid32,
+	__NR_getgid32,
+	__NR_setresuid32,
+	__NR_setresgid32,
+	__NR_setuid32,
+	__NR_fcntl64,
+	__NR_gettid,
+	__NR_set_thread_area,
+	__NR_pselect6,
+	__NR_unshare,
+	-1,
+};
 void exec_prntout()
 {
+	char src[256];
+	char dst[256];
 	int *cap_b = NULL;
 	int  cap_e[NUM_OF_CAPS];
 	int  cap_p[NUM_OF_CAPS];
 	int  cap_i[NUM_OF_CAPS];
-	char src[256];
-	char dst[256];
+	int *sc_blacklist = NULL;
+	int *sc_whitelist = NULL;
+	unsigned int cnt;
 	unsigned long esflags = ESLIB_BIND_UNBINDABLE | ESLIB_BIND_CREATE;
 	snprintf(src, sizeof(src), "%s/%s", TESTDIR, TESTPROG);
 	snprintf(dst, sizeof(dst), "%s/%s", FORTDIR, TESTPROG);
@@ -66,6 +111,11 @@ void exec_prntout()
 	cap_p[CAP_NET_RAW] = 1;
 	cap_i[CAP_NET_RAW] = 1;
 
+	sc_blacklist = alloc_sysblacklist(&cnt);
+	if (!sc_blacklist) {
+		printf("unable to load blacklist file(s)\n");
+		sc_whitelist = g_whitelist;
+	}
 	if (eslib_file_bind_private(src, dst, MS_RDONLY|MS_NOSUID, 1, esflags))
 		goto fail;
 	snprintf(dst, sizeof(dst), "%s/bin", FORTDIR);
@@ -79,7 +129,10 @@ void exec_prntout()
 		goto fail;
 	if (mount(0, dst, "proc", 0, 0))
 		goto fail;
-	if (fortify(FORTDIR,0,g_gid, 0,0,0, cap_b, cap_e, cap_p, cap_i, 0,0,1))
+	if (fortify(FORTDIR, 0, g_gid,
+			     sc_whitelist, sc_blacklist, 0,
+			     cap_b, cap_e, cap_p, cap_i,
+			     0, 0, 1))
 		goto fail;
 	if (setuid(g_uid))
 		goto fail;

@@ -623,26 +623,29 @@ char *cap_getname(int cap_nr)
 #define SECDAT_ARCH                offsetof(struct seccomp_data,arch)
 #define SECDAT_NR                  offsetof(struct seccomp_data,nr)
 
-static struct sock_filter *build_seccomp_filter(int  arch,
-						int *whitelist,
+static struct sock_filter *build_seccomp_filter(int *whitelist,
 						int *blocklist,
-						unsigned int  wcount,
-						unsigned int  bcount,
 						unsigned int *instr_count,
 						unsigned int  options,
 						long retaction)
 {
 	unsigned int i,z;
 	unsigned int proglen;
+	unsigned int wcount;
+	unsigned int bcount;
 	unsigned int count;
 	struct sock_filter *prog = NULL;
+
+	bcount = count_syscalls(blocklist, MAX_SYSCALLS);
+	wcount = count_syscalls(whitelist, MAX_SYSCALLS);
 
 	if (bcount > 0 && wcount <= 0) {
 		printf("error, cannot use seccomp_block without any seccomp_allow\n");
 		return NULL;
 	}
 	count = wcount + bcount;
-	if (count > MAX_SYSCALLS) {
+	if (count >= MAX_SYSCALLS) {
+		printf("syscall count(%d+%d) error\n", wcount, bcount);
 		printf("%d syscalls maximum\n", MAX_SYSCALLS);
 		return NULL;
 	}
@@ -668,7 +671,7 @@ static struct sock_filter *build_seccomp_filter(int  arch,
 
 	/* validate arch */
 	SECBPF_LD_ABSW(prog, i, SECDAT_ARCH);
-	SECBPF_JEQ(prog, i, arch, 1, 0);
+	SECBPF_JEQ(prog, i, SYSCALL_ARCH, 1, 0);
 	SECBPF_RET(prog, i, SECCOMP_RET_KILL);
 
 	/* load syscall number */
@@ -779,15 +782,17 @@ static struct sock_filter *build_seccomp_filter(int  arch,
 	return prog;
 }
 
-static struct sock_filter *build_blacklist_filter(int arch, int *blocklist,
-		unsigned int bcount, unsigned int *instr_count, long retaction)
+static struct sock_filter *build_blacklist_filter(int *blocklist,
+			unsigned int *instr_count, long retaction)
 {
 	unsigned int i,z;
-	unsigned int proglen;
+	unsigned int proglen, bcount;
 	struct sock_filter *prog = NULL;
 
-	if (bcount > MAX_SYSCALLS || bcount == 0) {
-		printf("blacklist count error\n");
+	bcount = count_syscalls(blocklist, MAX_SYSCALLS);
+	if (bcount >= MAX_SYSCALLS || bcount == 0) {
+		printf("blacklist count(%d) error\n", bcount);
+		printf("%d syscalls maximum\n", MAX_SYSCALLS);
 		return NULL;
 	}
 
@@ -803,7 +808,7 @@ static struct sock_filter *build_blacklist_filter(int arch, int *blocklist,
 
 	/* validate arch */
 	SECBPF_LD_ABSW(prog, i, SECDAT_ARCH);
-	SECBPF_JEQ(prog, i, arch, 1, 0);
+	SECBPF_JEQ(prog, i, SYSCALL_ARCH, 1, 0);
 	SECBPF_RET(prog, i, SECCOMP_RET_KILL);
 
 	/* load syscall number */
@@ -842,9 +847,7 @@ static struct sock_filter *build_blacklist_filter(int arch, int *blocklist,
 	return prog;
 }
 
-int filter_syscalls(int arch, int *whitelist, int *blocklist,
-		    unsigned int wcount, unsigned int bcount,
-		    unsigned int options, long retaction)
+int filter_syscalls(int *whitelist, int *blocklist, unsigned int options, long retaction)
 {
 	struct sock_filter *filter;
 	struct sock_fprog prog;
@@ -853,11 +856,9 @@ int filter_syscalls(int arch, int *whitelist, int *blocklist,
 	if (!whitelist && !blocklist)
 		return -1;
 	else if (!whitelist) {
-		if (bcount > 0) {
-			printf("building blacklist bcount: %d\n", bcount);
-			filter = build_blacklist_filter(arch, blocklist,
-					bcount, &instr_count, retaction);
-			printf("blacklist instr count: %d\n", instr_count);
+		if (blocklist) {
+			filter = build_blacklist_filter(blocklist,
+					&instr_count, retaction);
 		}
 		else {
 			printf("WARNING! no seccomp filter in use\n");
@@ -865,11 +866,8 @@ int filter_syscalls(int arch, int *whitelist, int *blocklist,
 		}
 	}
 	else {
-		if (!blocklist) {
-			bcount = 0;
-		}
-		filter = build_seccomp_filter(arch, whitelist, blocklist, wcount,
-				      bcount, &instr_count, options, retaction);
+		filter = build_seccomp_filter(whitelist, blocklist,
+				&instr_count, options, retaction);
 	}
 	if (filter == NULL)
 		return -1;
@@ -1067,26 +1065,12 @@ int fortify(char *chroot_path,
 		 int fs_exec)
 {
 
-	int freeblk = 0;
-	unsigned int cnt = 0;
 	unsigned long remountflags = MS_REMOUNT
 				   | MS_NOSUID
 				   | MS_NODEV;
 
 	if (eslib_file_path_check(chroot_path))
 		return -1;
-
-	if (!whitelist && !blocklist) {
-		blocklist = alloc_sysblacklist(&cnt);
-		if (!blocklist) {
-			/* TODO flags to clean up args, let user tell us
-			 * if they realllly don't want any seccomp filter
-			 */
-			printf("unable to load blacklist file(s)\n");
-			return -1;
-		}
-		freeblk = 1;
-	}
 
 	if (!fs_write)
 		remountflags |= MS_RDONLY;
@@ -1144,35 +1128,21 @@ int fortify(char *chroot_path,
 		return -1;
 	}
 	if (whitelist) {
-	       if (filter_syscalls(SYSCALL_ARCH,
-				       whitelist,
-				       blocklist,
-				       count_syscalls(whitelist, MAX_SYSCALLS),
-				       count_syscalls(blocklist, MAX_SYSCALLS),
-				       seccomp_opts,
-				       SECCOMP_RET_ERRNO)) {
+	       if (filter_syscalls(whitelist, blocklist,
+				       seccomp_opts, SECCOMP_RET_ERRNO)) {
 			/* TODO allow user to pass SECCOMP_RET_KILL since blocklist
 			 * is meant to prevent killing specific calls */
 			printf("unable to apply seccomp filter\n");
 			return -1;
 	       }
 	}
-	else {
-		if (!blocklist)
-			return -1;
-		if (filter_syscalls(SYSCALL_ARCH,
-				       NULL,
-				       blocklist,
-				       0,
-				       count_syscalls(blocklist, MAX_SYSCALLS),
-				       seccomp_opts,
-				       SECCOMP_RET_ERRNO)) {
+	else if (blocklist) {
+		if (filter_syscalls(NULL, blocklist,
+					seccomp_opts, SECCOMP_RET_ERRNO)) {
 			/* TODO allow caller to pass other ret actions */
 			printf("unable to apply seccomp filter\n");
 			return -1;
 		}
-		if (freeblk && blocklist)
-			free(blocklist);
 	}
 	return 0;
 }
@@ -1249,7 +1219,6 @@ int *alloc_seccomp_sclist(char *file, unsigned int *outcount)
 			goto fail;
 		}
 		syscalls[count] = syscall_nr;
-		printf("sc(%d): %s\n", count, syscall_getname(syscall_nr));
 		if (++count >= MAX_SYSCALLS)
 			goto fail;
 	}
