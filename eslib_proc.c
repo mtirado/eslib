@@ -10,10 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <linux/capability.h>
 
 #include "eslib.h"
 
 extern char **environ;
+extern int capget(cap_user_header_t header, const cap_user_data_t data);
 
 int eslib_proc_numfds(pid_t pid)
 {
@@ -44,7 +46,7 @@ int eslib_proc_numfds(pid_t pid)
 
 }
 
-int eslib_proc_getfds(pid_t pid, int **outlist)
+int eslib_proc_alloc_fdlist(pid_t pid, int **outlist)
 {
 	char path[256];
 	struct dirent *dent;
@@ -142,6 +144,9 @@ char *eslib_proc_getenv(char *name)
 	char **e;
 	char *str = NULL;
 
+	if (!name)
+		return NULL;
+
 	namelen = strlen(name);
 
 	errno = 0;
@@ -171,6 +176,9 @@ int eslib_proc_setenv(char *name, char *val)
 	int idx, count;
 	static int mallocd = 0;
 
+	if (!name || !val)
+		return -1;
+
 	errno = 0;
 	len = strlen(name);
 
@@ -179,15 +187,13 @@ int eslib_proc_setenv(char *name, char *val)
 	count = 0;
 	while (*e != NULL)
 	{
-		if (strncmp(name, *e, len) == 0) {
+		if (strncmp(name, *e, len+1) == 0) {
 			if (idx != -1) {
 				printf("duplicate entry found\n");
 				errno = ENOTUNIQ;
 				return -1;
 			}
-			if (name[len] == '\0') {
-				idx = count;
-			}
+			idx = count;
 		}
 		++e;
 		++count;
@@ -196,7 +202,7 @@ int eslib_proc_setenv(char *name, char *val)
 	}
 
 	len = strlen(name) + 1 + strlen(val) + 1; /*name=val\0*/
-	str = malloc(len);
+	str = malloc(len); /* will leak if set twice, TODO use realloc? */
 	if (str == NULL)
 		return -1;
 
@@ -286,12 +292,12 @@ off_t eslib_procfs_readfile(char *path, char **out)
 start_over:
 	errno = 0;
 	if (--retries < 0) {
-		printf("/proc/mounts is changing too rapidly\n");
+		printf("proc file is changing too rapidly\n");
 		errno = EAGAIN;
 		return -1;
 	}
 
-	if (out == NULL) {
+	if (!out) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -389,15 +395,22 @@ failure:
 
 }
 
+int eslib_proc_print_caps()
+{
+	struct __user_cap_header_struct hdr;
+	struct __user_cap_data_struct   data[2];
 
-
-
-
-
-
-
-
-
-
-
-
+	hdr.pid = getpid();
+	hdr.version = _LINUX_CAPABILITY_VERSION_3;
+	if (capget(&hdr, data)) {
+		printf("capget: %s\r\n", strerror(errno));
+		return -1;
+	}
+	printf("\reffective: %08x", data[1].effective);
+	printf("%08x\r\n", data[0].effective);
+	printf("permitted: %08x", data[1].permitted);
+	printf("%08x\r\n", data[0].permitted);
+	printf("inheritable: %08x", data[1].inheritable);
+	printf("%08x\r\n", data[0].inheritable);
+	return 0;
+}

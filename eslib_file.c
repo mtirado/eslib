@@ -6,6 +6,7 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/mount.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
@@ -84,14 +85,14 @@ int eslib_file_getparent(char *inpath, char outpath[MAX_SYSTEMPATH])
 {
 	int i;
 
-	if (!inpath || !outpath)
+	if (inpath == NULL || outpath == NULL)
 		return -1;
 
 	if (eslib_file_path_check(inpath))
 		return -1;
 
 	i = strnlen(inpath, MAX_SYSTEMPATH);
-	if (i >= MAX_SYSTEMPATH)
+	if (i >= MAX_SYSTEMPATH || i == 0)
 		return -1;
 
 	strncpy(outpath, inpath, i);
@@ -186,7 +187,7 @@ int eslib_file_isdir(char *path)
 }
 
 
-int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid)
+int eslib_file_mkdirpath(char *path, mode_t mode)
 {
 	int i;
 	char curdir[MAX_SYSTEMPATH];
@@ -226,9 +227,6 @@ int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid)
 				printf("chmod(%s): %s\n", curdir, strerror(errno));
 				return -1;
 			}
-			if (use_realid) {
-				chown(curdir, getuid(), getgid());
-			}
 		}
 		else if (ret == 1) {
 			if (eslib_file_isdir(curdir) != 1) {
@@ -249,7 +247,7 @@ int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid)
 }
 
 
-int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid)
+int eslib_file_mkfile(char *path, mode_t dirmode)
 {
 	unsigned int i;
 	unsigned int slashidx = 0;
@@ -279,7 +277,7 @@ int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid)
 		memset(dirpath, 0, sizeof(dirpath));
 		strncpy(dirpath, path, slashidx);
 		dirpath[MAX_SYSTEMPATH-1] = '\0'; 
-		if (eslib_file_mkdirpath(dirpath, dirmode, use_realid)) {
+		if (eslib_file_mkdirpath(dirpath, dirmode)) {
 			printf("mkfile error creating directory path\n");
 			return -1;
 		}
@@ -292,8 +290,6 @@ int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid)
 		return -1;
 	}
 	close(fd);
-	if (use_realid)
-		chown(path, getuid(), getgid());
 	return 0;
 
 }
@@ -365,4 +361,141 @@ ino_t eslib_file_getino(char *path)
 	}
 
 	return st.st_ino;
+}
+
+static int file_confirm_mountpoint(char *src, char *dest, unsigned long esflags)
+{
+	int r;
+	int exists = 0;
+	const mode_t mode = 0755; /* mode for new directories */
+
+	if (eslib_file_path_check(src) || eslib_file_path_check(dest))
+		return -1;
+
+	r = eslib_file_exists(dest);
+	if (r == -1)
+		goto err;
+	exists = r;
+
+	/* directory */
+	r = eslib_file_isdir(src);
+	if (r == 1) {
+		if (exists) {
+			/* fail if dest is not a directory */
+			if (eslib_file_isdir(dest) != 1) {
+				printf("dest(%s) is not a directory.\n", dest);
+				return -1;
+			}
+		}
+		else {
+			if (esflags & ESLIB_BIND_CREATE) {
+				if (eslib_file_mkdirpath(dest, mode)) {
+					printf("mkdirpath(%s) failed\n", dest);
+					return -1;
+				}
+			}
+			else {
+				printf("dest(%s) did not exist\n", dest);
+				return -1;
+			}
+		}
+		return 0;
+	}
+	else if (r == -1) {
+		goto err;
+	}
+
+	/* non-directory */
+	if (exists) {
+		/* fail if dest is a directory */
+		r = eslib_file_isdir(dest);
+		if (r == 1) {
+			printf("dest(%s) should not be a directory\n", dest);
+			return -1;
+		}
+		if (r == 0) {
+			return 0;
+		}
+		else {
+			goto err;
+		}
+	}
+	else {
+		if (esflags & ESLIB_BIND_CREATE) {
+			if (eslib_file_mkfile(dest, mode)) {
+				printf("mkfile(%s) failed\n", dest);
+				return -1;
+			}
+		}
+		else {
+			printf("dest(%s) did not exist\n", dest);
+			return -1;
+		}
+		return 0;
+	}
+err:
+	printf("create mountpoint(%s, %s) failed\n", src, dest);
+	return -1;
+}
+
+/* note: unbindable is NOT applied recursively */
+static int file_bind(char *src, char *dest,
+		unsigned long mntflags, int propflags, unsigned long esflags)
+{
+	if (src == NULL || dest == NULL)
+		return -1;
+	if (file_confirm_mountpoint(src, dest, esflags))
+		return -1;
+	if (mount(src, dest, NULL, MS_BIND, NULL)) {
+		printf("mount: %s\n", strerror(errno));
+		return -1;
+	}
+	if (mount(NULL, dest, NULL, MS_BIND|MS_REMOUNT|mntflags, NULL)) {
+		printf("remount: %s\n", strerror(errno));
+		if (umount(dest))
+			printf("umount: %s\n", strerror(errno));
+		return -1;
+	}
+	if (esflags & ESLIB_BIND_UNBINDABLE) {
+		if (mount(NULL, dest, NULL, MS_UNBINDABLE, NULL)) {
+			printf("remount: %s\n", strerror(errno));
+			if (umount(dest))
+				printf("umount: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+	if (mount(NULL, dest, NULL, propflags, NULL)) {
+		printf("remount: %s\n", strerror(errno));
+		if (umount(dest))
+			printf("umount: %s\n", strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+int eslib_file_bind_private(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags)
+{
+	if (recursive)
+		return file_bind(src, dest, mntflags, MS_PRIVATE|MS_REC, esflags);
+	else
+		return file_bind(src, dest, mntflags, MS_PRIVATE, esflags);
+}
+
+int eslib_file_bind_slave(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags)
+{
+	if (recursive)
+		return file_bind(src, dest, mntflags, MS_SLAVE|MS_REC, esflags);
+	else
+		return file_bind(src, dest, mntflags, MS_SLAVE, esflags);
+}
+
+int eslib_file_bind_shared(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags)
+{
+	if (recursive)
+		return file_bind(src, dest, mntflags, MS_SHARED|MS_REC, esflags);
+	else
+		return file_bind(src, dest, mntflags, MS_SHARED, esflags);
 }

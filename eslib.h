@@ -12,6 +12,10 @@
 #define ESLIB_LOG_MAXMSG 1024
 #define ESLIB_MAX_PROCNAME 32
 
+/* eslib_file_bind bit flags */
+#define ESLIB_BIND_CREATE	1 /* create dest files */
+#define ESLIB_BIND_UNBINDABLE 	2 /* remount with unbindable flag (non-recursive) */
+
 /* =====================================
  * 		sockets
  * =====================================
@@ -73,6 +77,7 @@ int eslib_sock_recv_cred(int sock, struct ucred *out_creds);
  * =====================================
  */
 
+
 /*
  *  validate a system path.
  *  the stringlen should be less than MAX_SYSTEMPATH
@@ -126,25 +131,23 @@ int eslib_file_isdir(char *path);
 /*
  *  create the full path if any directories did not exist using mode
  *  sets ownership of new directories to process real uid/gid
- *  use with caution if potentially creating root system paths!
- *  use_realid will chown new directories to getuid() / getgid()
+ *  use with caution if potentially creating sensitive root system paths!
  *  returns
  *   0  - ok
  *  -1  - error
  *
  */
-int eslib_file_mkdirpath(char *path, mode_t mode, int use_realid);
+int eslib_file_mkdirpath(char *path, mode_t mode);
 
 /*
  *  create file, and any directories needed to complete path using dirmode
  *  0700 permission is used for new file
- *  use with caution if potentially creating root system files/paths!
- *  use_realid will chown new directories+file to getuid() / getgid()
+ *  use with caution if potentially creating sensitive root system files/paths!
  *  returns
  *   0  - ok
  *  -1	- error
  */
-int eslib_file_mkfile(char *path, mode_t dirmode, int use_realid);
+int eslib_file_mkfile(char *path, mode_t dirmode);
 
 /*
  *  returns
@@ -166,6 +169,26 @@ uid_t eslib_file_getuid(char *path);
  *    0	- error
  */
 ino_t eslib_file_getino(char *path);
+
+/*
+ * bind mount files
+ * src, dest  - source file and destination mount point
+ * mntflags   - remount with these flags, e.g: MS_RDONLY|MS_NOSUID etc...
+ * recursive  - apply propagation (private/slave) recursively to all sub mounts
+ * unbindable - set MS_UNBINDABLE on this mount point (non-recursively)
+ *
+ * avoid using shared mounts wherever possible.
+ *
+ * returns
+ *  0  - ok
+ * -1  - error
+ */
+int eslib_file_bind_private(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags);
+int eslib_file_bind_slave(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags);
+int eslib_file_bind_shared(char *src, char *dest,
+		unsigned long mntflags, int recursive, unsigned long esflags);
 
 
 /* =====================================
@@ -190,7 +213,7 @@ int eslib_proc_numfds(pid_t pid);
  *   0  - no open fd's
  *  -1	- error
  */
-int eslib_proc_getfds(pid_t pid, int **outlist);
+int eslib_proc_alloc_fdlist(pid_t pid, int **outlist);
 
 
 /*
@@ -223,7 +246,10 @@ char *eslib_proc_getname();
  */
 off_t eslib_procfs_readfile(char *path, char **out);
 
-
+/*
+ * print current process capabilities to stdout
+ */
+int eslib_proc_print_caps();
 
 /* =====================================
  * 		debug halp!
