@@ -135,8 +135,6 @@ failed:
 	return -1;
 }
 
-
-
 char *eslib_proc_getenv(char *name)
 {
 	int found = 0;
@@ -340,7 +338,7 @@ start_over:
 		printf("lseek: %s\n", strerror(errno));
 		goto failure;
 	}
-	buf = malloc(size);
+	buf = malloc(size+1); /* + null terminator */
 	if (buf == NULL) {
 		printf("malloc: %s\n", strerror(errno));
 		goto failure;
@@ -378,8 +376,9 @@ start_over:
 	}
 
 	close(fd);
+	buf[size] = '\0';
 	*out = buf;
-	return size;
+	return size+1;
 
 try_again:
 	close(fd);
