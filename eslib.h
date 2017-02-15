@@ -13,8 +13,12 @@
 #define ESLIB_MAX_PROCNAME 32
 
 /* eslib_file_bind bit flags */
-#define ESLIB_BIND_CREATE	1 /* create dest files */
-#define ESLIB_BIND_UNBINDABLE 	2 /* remount with unbindable flag (non-recursive) */
+#define ESLIB_BIND_PRIVATE      0  /* private is the implied default                  */
+#define ESLIB_BIND_SHARED 	1  /* shared & slave can't both be true, if they are  */
+#define ESLIB_BIND_SLAVE 	2  /* slave has priority                              */
+#define ESLIB_BIND_NONRECURSIVE	4  /* apply propagation flag non-recursively          */
+#define ESLIB_BIND_UNBINDABLE 	8
+#define ESLIB_BIND_CREATE	16 /* create destination paths(0755) and files        */
 
 /* =====================================
  * 		sockets
@@ -174,8 +178,7 @@ ino_t eslib_file_getino(char *path);
  * bind mount files
  * src, dest  - source file and destination mount point
  * mntflags   - remount with these flags, e.g: MS_RDONLY|MS_NOSUID etc...
- * recursive  - apply propagation (private/slave) recursively to all sub mounts
- * unbindable - set MS_UNBINDABLE on this mount point (non-recursively)
+ * esflags    - ESLIB_BIND_* flags, mount propagation is private/recursive
  *
  * avoid using shared mounts wherever possible.
  *
@@ -183,12 +186,7 @@ ino_t eslib_file_getino(char *path);
  *  0  - ok
  * -1  - error
  */
-int eslib_file_bind_private(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags);
-int eslib_file_bind_slave(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags);
-int eslib_file_bind_shared(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags);
+int eslib_file_bind(char *src, char *dest,unsigned long mntflags,unsigned long esflags);
 
 
 /* =====================================

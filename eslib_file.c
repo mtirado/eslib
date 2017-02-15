@@ -438,9 +438,8 @@ err:
 	return -1;
 }
 
-/* note: unbindable is NOT applied recursively */
 static int file_bind(char *src, char *dest,
-		unsigned long mntflags, int propflags, unsigned long esflags)
+		unsigned long mntflags, unsigned long propflags, unsigned long esflags)
 {
 	if (src == NULL || dest == NULL)
 		return -1;
@@ -457,7 +456,10 @@ static int file_bind(char *src, char *dest,
 		return -1;
 	}
 	if (esflags & ESLIB_BIND_UNBINDABLE) {
-		if (mount(NULL, dest, NULL, MS_UNBINDABLE, NULL)) {
+		unsigned long ubflags = MS_UNBINDABLE;
+		if (!(esflags & ESLIB_BIND_NONRECURSIVE))
+			ubflags |= MS_REC;
+		if (mount(NULL, dest, NULL, ubflags, NULL)) {
 			printf("remount: %s\n", strerror(errno));
 			if (umount(dest))
 				printf("umount: %s\n", strerror(errno));
@@ -473,29 +475,20 @@ static int file_bind(char *src, char *dest,
 	return 0;
 }
 
-int eslib_file_bind_private(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags)
+int eslib_file_bind(char *src, char *dest,
+		unsigned long mntflags, unsigned long esflags)
 {
-	if (recursive)
-		return file_bind(src, dest, mntflags, MS_PRIVATE|MS_REC, esflags);
-	else
-		return file_bind(src, dest, mntflags, MS_PRIVATE, esflags);
-}
+	unsigned long propflags;
 
-int eslib_file_bind_slave(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags)
-{
-	if (recursive)
-		return file_bind(src, dest, mntflags, MS_SLAVE|MS_REC, esflags);
+	if (esflags & ESLIB_BIND_SLAVE)
+		propflags = MS_SLAVE;
+	else if (esflags & ESLIB_BIND_SHARED)
+		propflags = MS_SHARED;
 	else
-		return file_bind(src, dest, mntflags, MS_SLAVE, esflags);
-}
+		propflags = MS_PRIVATE;
 
-int eslib_file_bind_shared(char *src, char *dest,
-		unsigned long mntflags, int recursive, unsigned long esflags)
-{
-	if (recursive)
-		return file_bind(src, dest, mntflags, MS_SHARED|MS_REC, esflags);
-	else
-		return file_bind(src, dest, mntflags, MS_SHARED, esflags);
+	if (!(esflags & ESLIB_BIND_NONRECURSIVE))
+		propflags |= MS_REC;
+
+	return file_bind(src, dest, mntflags, propflags, esflags);
 }

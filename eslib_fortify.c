@@ -1049,8 +1049,55 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 	return 0;
 }
 
-/* caller must unshare mount/pid ns and do bind mounts before calling fortify */
-int fortify(char *chroot_path,
+int eslib_fortify_prepare(char *chroot_path, int mountproc)
+{
+	if (eslib_file_path_check(chroot_path))
+		return -1;
+	if (eslib_file_mkdirpath(chroot_path, 0755))
+		return -1;
+	if (unshare(CLONE_NEWNS | CLONE_NEWPID)) {
+		printf("unshare: %s\n", strerror(errno));
+		return -1;
+	}
+	if (mountproc)
+	{
+		char path[MAX_SYSTEMPATH];
+		unsigned long remountflags = MS_REMOUNT
+					   | MS_NOEXEC
+					   | MS_NOSUID
+					   | MS_NODEV;
+		if (mountproc > 0) /* use -1 for +w */
+			remountflags |= MS_RDONLY;
+
+		snprintf(path, sizeof(path), "%s/proc", chroot_path);
+		if (eslib_file_mkdirpath(path, 0755))
+			return -1;
+
+		if (mount(0, path, "proc", 0, 0)) {
+			printf("mount proc: %s\n", strerror(errno));
+			return -1;
+		}
+		if (mount(path, path, "proc", remountflags, NULL)) {
+			printf("remount proc: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int eslib_fortify_install_file(char *chroot_path, char *file,
+		int mntflags, unsigned long esflags)
+{
+	char dest[MAX_SYSTEMPATH];
+	if (eslib_file_path_check(chroot_path) || eslib_file_path_check(file))
+		return -1;
+	snprintf(dest, sizeof(dest), "%s%s", chroot_path, file);
+	if (eslib_file_bind(file, dest, mntflags, esflags))
+		return -1;
+	return 0;
+}
+
+int eslib_fortify(char *chroot_path,
 		 uid_t set_resuid,
 		 gid_t set_resgid,
 		 int  *whitelist,
@@ -1143,12 +1190,15 @@ int fortify(char *chroot_path,
 			printf("unable to apply seccomp filter\n");
 			return -1;
 		}
+		printf("warning: no seccomp filter being used\n");
 	}
 	return 0;
 }
 
-/* TODO eslib_string, and get rid of fopen/fgets to minimize libc exposure
- *  since this lib is mostly linux / *nix specific anyway
+/* TODO eslib_string, and get rid of fopen/fgets to minimize libc dependency
+ *  since this lib is linux / posix specific anyway
+ *
+ *  return: number of characters chopped, -1 error
  */
 static int chop_trailing(char *string, unsigned int size, const char match)
 {
@@ -1170,7 +1220,7 @@ static int chop_trailing(char *string, unsigned int size, const char match)
 				return -1;
 		}
 		else {
-			return chopped; /* no matches */
+			return chopped;
 		}
 		if (i == 0) {
 			return chopped;
