@@ -129,7 +129,7 @@ void exec_prntout()
 			  sc_blacklist,
 			  0,
 			  cap_b, cap_e, cap_p, cap_i,
-			  0,0,0))
+			  0))
 		goto fail;
 	if (setuid(g_uid))
 		goto fail;

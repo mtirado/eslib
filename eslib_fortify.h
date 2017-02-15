@@ -32,6 +32,10 @@
 	#error arch lacks systemcall define, add it and test!
 #endif
 
+/* fortify flags */
+#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* ignore the global cap blacklist	*/
+#define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces        */
+
 /*
  * the only privileges supported are ones directly inherited, no file caps.
  * and there are some dangerous pitfalls to know if you need this feature.
@@ -90,9 +94,7 @@ int eslib_fortify(char *chroot_path,
 		 int cap_e[NUM_OF_CAPS],
 		 int cap_p[NUM_OF_CAPS],
 		 int cap_i[NUM_OF_CAPS],
-		 int ignore_cap_blacklist,
-		 int fs_write,
-		 int fs_exec);
+		 unsigned long fortflags);
 
 
 /* caller must free the syscall array returned here */

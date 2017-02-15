@@ -1107,11 +1107,10 @@ int eslib_fortify(char *chroot_path,
 		 int *cap_e,
 		 int *cap_p,
 		 int *cap_i,
-		 int ignore_cap_blacklist,
-		 int fs_write,
-		 int fs_exec)
+		 unsigned long fortflags)
 {
 
+	int ignore_cap_blacklist = 0;
 	unsigned long remountflags = MS_REMOUNT
 				   | MS_NOSUID
 				   | MS_NODEV;
@@ -1119,10 +1118,16 @@ int eslib_fortify(char *chroot_path,
 	if (eslib_file_path_check(chroot_path))
 		return -1;
 
-	if (!fs_write)
-		remountflags |= MS_RDONLY;
-	if (!fs_exec)
-		remountflags |= MS_NOEXEC;
+	ignore_cap_blacklist = fortflags & ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST;
+	remountflags |= MS_RDONLY;
+	remountflags |= MS_NOEXEC;
+
+	if (!(fortflags & ESLIB_FORTIFY_SHARE_NET)) {
+		if (unshare(CLONE_NEWNET)) {
+			printf("unshare(CLONE_NEWNET): %s\n", strerror(errno));
+			return -1;
+		}
+	}
 
 	if (mount(chroot_path, chroot_path, "bind", MS_BIND, NULL)) {
 		printf("could not bind mount: %s\n", strerror(errno));
@@ -1132,7 +1137,7 @@ int eslib_fortify(char *chroot_path,
 		printf("could not bind mount: %s\n", strerror(errno));
 		return -1;
 	}
-	/* TODO let them have non-private mount propagation?
+	/* TODO let them have non-private / mount propagation?
 	 * or at least option to not recursively set them private?
 	 * do the benefits seem worth potential trouble?
 	 * i'm leaning towards yes for at least MS_SLAVE
