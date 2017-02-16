@@ -122,14 +122,10 @@ void exec_prntout()
 		goto fail;
 	if (eslib_fortify_install_file(FORTDIR, "/lib", mflags, esflags))
 		goto fail;
-	if (eslib_fortify(FORTDIR,
-			  0,
-			  g_gid,
-			  sc_whitelist,
-			  sc_blacklist,
-			  0,
-			  cap_b, cap_e, cap_p, cap_i,
-			  0))
+	if (eslib_fortify(FORTDIR, 0, g_gid,
+				sc_whitelist, sc_blacklist, 0,
+				cap_b, cap_e, cap_p, cap_i,
+				0))
 		goto fail;
 	if (setuid(g_uid))
 		goto fail;

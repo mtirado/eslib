@@ -21,8 +21,8 @@
 #define SECCRET_DENIED 0xF0FF
 
 /* seccomp filter options */
-#define SECCOPT_BLOCKNEW 0x1
-#define SECCOPT_PTRACE   0x2
+#define SECCOPT_BLOCKNEW      1 /* block additional seccomp filters     */
+#define SECCOPT_PTRACE        2 /* allow ptrace                         */
 
 #ifdef __x86_64__ /* TODO this is untested... add other arch's */
 	#define SYSCALL_ARCH AUDIT_ARCH_X86_64
@@ -33,8 +33,9 @@
 #endif
 
 /* fortify flags */
-#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* ignore the global cap blacklist	*/
-#define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces        */
+#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* ignore the global cap blacklist	      */
+#define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces              */
+#define ESLIB_FORTIFY_STRICT	  	   4 /* seccomp kills if not graylisted       */
 
 /*
  * the only privileges supported are ones directly inherited, no file caps.
@@ -81,7 +82,7 @@ int eslib_fortify_install_file(char *chroot_path, char *file,
 
 
 /* call this after mnt namespace is unshared and if any chroot_path mounts are setup
- * whitelist and blocklist should be terminated by -1
+ * whitelist and blocklist are arrays terminated by -1
  * TODO add nonet option, and close tty
  */
 int eslib_fortify(char *chroot_path,

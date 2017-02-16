@@ -446,17 +446,16 @@ struct sc_translate sc_table[] = {
 { "__NR_kcmp", __NR_kcmp },
 { "__NR_finit_module", __NR_finit_module },
 /* 3.10 */
-
-/* 4.1 */
-/*{ "__NR_sched_setattr", __NR_sched_setattr },
+{ "__NR_sched_setattr", __NR_sched_setattr },
 { "__NR_sched_getattr", __NR_sched_getattr },
 { "__NR_renameat2", __NR_renameat2 },
+/* 3.17 */
 { "__NR_seccomp", __NR_seccomp },
 { "__NR_getrandom", __NR_getrandom },
 { "__NR_memfd_create", __NR_memfd_create },
 { "__NR_bpf", __NR_bpf },
 { "__NR_execveat", __NR_execveat },
-*/
+
 
 /* 4.3
  * fine grained socket calls,
@@ -645,21 +644,26 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	}
 	count = wcount + bcount;
 	if (count >= MAX_SYSCALLS) {
-		printf("syscall count(%d+%d) error\n", wcount, bcount);
-		printf("%d syscalls maximum\n", MAX_SYSCALLS);
+		printf("seccomp syscall count(%d+%d) error\n", wcount, bcount);
+		printf("%d syscalls allowed\n", MAX_SYSCALLS);
 		return NULL;
 	}
 
+	if (retaction == SECCOMP_RET_TRAP) {
+		options |= SECCOPT_BLOCKNEW;
+	}
+
+	/* arch validation, load number, call list, ret action */
 	proglen = 4 + (count * 2) + 1;
-	/* whitelist for init process */
-	if (count > 0)
-		proglen += 18;
+	/* exit and exit_group */
+	proglen += 4;
 	if (options & SECCOPT_BLOCKNEW) {
 		proglen += 7;
 	}
 	if (!(options & SECCOPT_PTRACE)) {
 		proglen += 2;
 	}
+
 
 	prog = malloc(proglen * sizeof(struct sock_filter));
 	if (prog == NULL)
@@ -737,28 +741,17 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 		SECBPF_RET(prog,i,SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
 	}
 
-	/* our init process needs to setup signals, fork exec waitpid kill exit */
-	SECBPF_JEQ(prog, i, __NR_sigaction, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	SECBPF_JEQ(prog, i, __NR_sigreturn, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	SECBPF_JEQ(prog, i, __NR_clone, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	SECBPF_JEQ(prog, i, __NR_waitpid, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	SECBPF_JEQ(prog, i, __NR_kill, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	SECBPF_JEQ(prog, i, __NR_nanosleep, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	SECBPF_JEQ(prog, i, __NR_exit, 0, 1);
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	SECBPF_JEQ(prog, i, __NR_exit_group, 0, 1);
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	/* TODO some decent hack to disable exec after init calls it
-	 * though programs could still patch themselves, dlopen, etc...
-	 * on most linux kernels :( */
-	SECBPF_JEQ(prog, i, __NR_execve, 0, 1);
-	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
+
+	/* what breaks without this? seems to not matter anymore (since 4.8.x at least)
+	 * and it's ugly, don't mind this comment unless i just broke something,
+	 * then uncomment below and add 2 to proglen
+	 * SECBPF_JEQ(prog, i, __NR_sigreturn, 0, 1);
+	 * SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
+	 */
 
 	/* set return action */
 	switch (retaction)
@@ -1110,6 +1103,7 @@ int eslib_fortify(char *chroot_path,
 		 unsigned long fortflags)
 {
 
+	long retaction = SECCOMP_RET_ERRNO;
 	int ignore_cap_blacklist = 0;
 	unsigned long remountflags = MS_REMOUNT
 				   | MS_NOSUID
@@ -1127,6 +1121,9 @@ int eslib_fortify(char *chroot_path,
 			printf("unshare(CLONE_NEWNET): %s\n", strerror(errno));
 			return -1;
 		}
+	}
+	if (fortflags & ESLIB_FORTIFY_STRICT) {
+		retaction = SECCOMP_RET_KILL;
 	}
 
 	if (mount(chroot_path, chroot_path, "bind", MS_BIND, NULL)) {
@@ -1180,22 +1177,16 @@ int eslib_fortify(char *chroot_path,
 		return -1;
 	}
 	if (whitelist) {
-	       if (filter_syscalls(whitelist, blocklist,
-				       seccomp_opts, SECCOMP_RET_ERRNO)) {
-			/* TODO allow user to pass SECCOMP_RET_KILL since blocklist
-			 * is meant to prevent killing specific calls */
+	       if (filter_syscalls(whitelist, blocklist, seccomp_opts, retaction)) {
 			printf("unable to apply seccomp filter\n");
 			return -1;
 	       }
 	}
 	else if (blocklist) {
-		if (filter_syscalls(NULL, blocklist,
-					seccomp_opts, SECCOMP_RET_ERRNO)) {
-			/* TODO allow caller to pass other ret actions */
+		if (filter_syscalls(NULL, blocklist, seccomp_opts, retaction)) {
 			printf("unable to apply seccomp filter\n");
 			return -1;
 		}
-		printf("warning: no seccomp filter being used\n");
 	}
 	return 0;
 }
