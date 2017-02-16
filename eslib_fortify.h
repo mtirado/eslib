@@ -120,7 +120,6 @@ unsigned int count_syscalls(int *syscalls, unsigned int maxcount);
  * TODO fix this and add BLOCKNEW if using RET_TRAP
  * TODO use option for implicit pid1 whitelist (exec clone kill ...)
  *
- * arch: AUDIT_ARCH_I386, AUDIT_ARCH_X86_64, etc.
  */
 int filter_syscalls(int *whitelist, int *blocklist, unsigned int options,long retaction);
 /* defstring should be the syscalls #define name,

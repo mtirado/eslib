@@ -109,9 +109,9 @@ void exec_prntout()
 	cap_i[CAP_NET_RAW] = 1;
 
 	sc_blacklist = alloc_sysblacklist(&cnt);
+	sc_whitelist = g_whitelist;
 	if (!sc_blacklist) {
 		printf("unable to load blacklist file(s)\n");
-		sc_whitelist = g_whitelist;
 	}
 
 	if (eslib_fortify_prepare(FORTDIR, 1))

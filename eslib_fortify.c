@@ -655,8 +655,8 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 
 	/* arch validation, load number, call list, ret action */
 	proglen = 4 + (count * 2) + 1;
-	/* exit and exit_group */
-	proglen += 4;
+	/* sigreturn, exit, and exit_group */
+	proglen += 6;
 	if (options & SECCOPT_BLOCKNEW) {
 		proglen += 7;
 	}
@@ -741,17 +741,12 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 		SECBPF_RET(prog,i,SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
 	}
 
+	SECBPF_JEQ(prog, i, __NR_sigreturn, 0, 1);
+	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	SECBPF_JEQ(prog, i, __NR_exit, 0, 1);
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	SECBPF_JEQ(prog, i, __NR_exit_group, 0, 1);
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-
-	/* what breaks without this? seems to not matter anymore (since 4.8.x at least)
-	 * and it's ugly, don't mind this comment unless i just broke something,
-	 * then uncomment below and add 2 to proglen
-	 * SECBPF_JEQ(prog, i, __NR_sigreturn, 0, 1);
-	 * SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	 */
 
 	/* set return action */
 	switch (retaction)
