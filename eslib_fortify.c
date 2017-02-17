@@ -20,7 +20,6 @@
 #include <memory.h>
 #include <errno.h>
 
-#include <sys/syscall.h>
 #include "eslib.h"
 #include "eslib_fortify.h"
 
@@ -972,7 +971,6 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 	unsigned long secbits;
 	memset(&hdr, 0, sizeof(hdr));
 	memset(data, 0, sizeof(data));
-	hdr.pid = syscall(__NR_gettid);
 	hdr.version = _LINUX_CAPABILITY_VERSION_3;
 
 	for(i = 0; i < NUM_OF_CAPS; ++i)
