@@ -1253,7 +1253,7 @@ int eslib_fortify(char *chroot_path,
 				   | MS_NOSUID
 				   | MS_NODEV;
 
-	if (eslib_file_path_check(chroot_path) || !filter)
+	if (eslib_file_path_check(chroot_path))
 		return -1;
 
 	ignore_cap_blacklist = fortflags & ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST;
@@ -1317,7 +1317,7 @@ int eslib_fortify(char *chroot_path,
 		printf("no new privs failed: %s\n", strerror(errno));
 		return -1;
 	}
-	if (seccomp_program_install(filter)) {
+	if (filter && seccomp_program_install(filter)) {
 		printf("unable to apply seccomp filter\n");
 		return -1;
 	}
