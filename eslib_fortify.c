@@ -97,386 +97,386 @@ struct cap_translate cap_table[] = {
  * version: 4.1
  */
 struct sc_translate sc_table[] = {
-{ "__NR_restart_syscall", __NR_restart_syscall },
-{ "__NR_exit", __NR_exit },
-{ "__NR_fork", __NR_fork },
-{ "__NR_read", __NR_read },
-{ "__NR_write", __NR_write },
-{ "__NR_open", __NR_open },
-{ "__NR_close", __NR_close },
-{ "__NR_waitpid", __NR_waitpid },
-{ "__NR_creat", __NR_creat },
-{ "__NR_link", __NR_link },
-{ "__NR_unlink", __NR_unlink },
-{ "__NR_execve", __NR_execve },
-{ "__NR_chdir", __NR_chdir },
-{ "__NR_time", __NR_time },
-{ "__NR_mknod", __NR_mknod },
-{ "__NR_chmod", __NR_chmod },
-{ "__NR_lchown", __NR_lchown },
-{ "__NR_break", __NR_break },
-{ "__NR_oldstat", __NR_oldstat },
-{ "__NR_lseek", __NR_lseek },
-{ "__NR_getpid", __NR_getpid },
-{ "__NR_mount", __NR_mount },
-{ "__NR_umount", __NR_umount },
-{ "__NR_setuid", __NR_setuid },
-{ "__NR_getuid", __NR_getuid },
-{ "__NR_stime", __NR_stime },
-{ "__NR_ptrace", __NR_ptrace },
-{ "__NR_alarm", __NR_alarm },
-{ "__NR_oldfstat", __NR_oldfstat },
-{ "__NR_pause", __NR_pause },
-{ "__NR_utime", __NR_utime },
-{ "__NR_stty", __NR_stty },
-{ "__NR_gtty", __NR_gtty },
-{ "__NR_access", __NR_access },
-{ "__NR_nice", __NR_nice },
-{ "__NR_ftime", __NR_ftime },
-{ "__NR_sync", __NR_sync },
-{ "__NR_kill", __NR_kill },
-{ "__NR_rename", __NR_rename },
-{ "__NR_mkdir", __NR_mkdir },
-{ "__NR_rmdir", __NR_rmdir },
-{ "__NR_dup", __NR_dup },
-{ "__NR_pipe", __NR_pipe },
-{ "__NR_times", __NR_times },
-{ "__NR_prof", __NR_prof },
-{ "__NR_brk", __NR_brk },
-{ "__NR_setgid", __NR_setgid },
-{ "__NR_getgid", __NR_getgid },
-{ "__NR_signal", __NR_signal },
-{ "__NR_geteuid", __NR_geteuid },
-{ "__NR_getegid", __NR_getegid },
-{ "__NR_acct", __NR_acct },
-{ "__NR_umount2", __NR_umount2 },
-{ "__NR_lock", __NR_lock },
-{ "__NR_ioctl", __NR_ioctl },
-{ "__NR_fcntl", __NR_fcntl },
-{ "__NR_mpx", __NR_mpx },
-{ "__NR_setpgid", __NR_setpgid },
-{ "__NR_ulimit", __NR_ulimit },
-{ "__NR_oldolduname", __NR_oldolduname },
-{ "__NR_umask", __NR_umask },
-{ "__NR_chroot", __NR_chroot },
-{ "__NR_ustat", __NR_ustat },
-{ "__NR_dup2", __NR_dup2 },
-{ "__NR_getppid", __NR_getppid },
-{ "__NR_getpgrp", __NR_getpgrp },
-{ "__NR_setsid", __NR_setsid },
-{ "__NR_sigaction", __NR_sigaction },
-{ "__NR_sgetmask", __NR_sgetmask },
-{ "__NR_ssetmask", __NR_ssetmask },
-{ "__NR_setreuid", __NR_setreuid },
-{ "__NR_setregid", __NR_setregid },
-{ "__NR_sigsuspend", __NR_sigsuspend },
-{ "__NR_sigpending", __NR_sigpending },
-{ "__NR_sethostname", __NR_sethostname },
-{ "__NR_setrlimit", __NR_setrlimit },
-{ "__NR_getrlimit", __NR_getrlimit },
-{ "__NR_getrusage", __NR_getrusage },
-{ "__NR_gettimeofday", __NR_gettimeofday },
-{ "__NR_settimeofday", __NR_settimeofday },
-{ "__NR_getgroups", __NR_getgroups },
-{ "__NR_setgroups", __NR_setgroups },
-{ "__NR_select", __NR_select },
-{ "__NR_symlink", __NR_symlink },
-{ "__NR_oldlstat", __NR_oldlstat },
-{ "__NR_readlink", __NR_readlink },
-{ "__NR_uselib", __NR_uselib },
-{ "__NR_swapon", __NR_swapon },
-{ "__NR_reboot", __NR_reboot },
-{ "__NR_readdir", __NR_readdir },
-{ "__NR_mmap", __NR_mmap },
-{ "__NR_munmap", __NR_munmap },
-{ "__NR_truncate", __NR_truncate },
-{ "__NR_ftruncate", __NR_ftruncate },
-{ "__NR_fchmod", __NR_fchmod },
-{ "__NR_fchown", __NR_fchown },
-{ "__NR_getpriority", __NR_getpriority },
-{ "__NR_setpriority", __NR_setpriority },
-{ "__NR_profil", __NR_profil },
-{ "__NR_statfs", __NR_statfs },
-{ "__NR_fstatfs", __NR_fstatfs },
-{ "__NR_ioperm", __NR_ioperm },
-{ "__NR_socketcall", __NR_socketcall },
-{ "__NR_syslog", __NR_syslog },
-{ "__NR_setitimer", __NR_setitimer },
-{ "__NR_getitimer", __NR_getitimer },
-{ "__NR_stat", __NR_stat },
-{ "__NR_lstat", __NR_lstat },
-{ "__NR_fstat", __NR_fstat },
-{ "__NR_olduname", __NR_olduname },
-{ "__NR_iopl", __NR_iopl },
-{ "__NR_vhangup", __NR_vhangup },
-{ "__NR_idle", __NR_idle },
-{ "__NR_vm86old", __NR_vm86old },
-{ "__NR_wait4", __NR_wait4 },
-{ "__NR_swapoff", __NR_swapoff },
-{ "__NR_sysinfo", __NR_sysinfo },
-{ "__NR_ipc", __NR_ipc },
-{ "__NR_fsync", __NR_fsync },
-{ "__NR_sigreturn", __NR_sigreturn },
-{ "__NR_clone", __NR_clone },
-{ "__NR_setdomainname", __NR_setdomainname },
-{ "__NR_uname", __NR_uname },
-{ "__NR_modify_ldt", __NR_modify_ldt },
-{ "__NR_adjtimex", __NR_adjtimex },
-{ "__NR_mprotect", __NR_mprotect },
-{ "__NR_sigprocmask", __NR_sigprocmask },
-{ "__NR_create_module", __NR_create_module },
-{ "__NR_init_module", __NR_init_module },
-{ "__NR_delete_module", __NR_delete_module },
-{ "__NR_get_kernel_syms", __NR_get_kernel_syms },
-{ "__NR_quotactl", __NR_quotactl },
-{ "__NR_getpgid", __NR_getpgid },
-{ "__NR_fchdir", __NR_fchdir },
-{ "__NR_bdflush", __NR_bdflush },
-{ "__NR_sysfs", __NR_sysfs },
-{ "__NR_personality", __NR_personality },
-{ "__NR_afs_syscall", __NR_afs_syscall },
-{ "__NR_setfsuid", __NR_setfsuid },
-{ "__NR_setfsgid", __NR_setfsgid },
-{ "__NR__llseek", __NR__llseek },
-{ "__NR_getdents", __NR_getdents },
-{ "__NR__newselect", __NR__newselect },
-{ "__NR_flock", __NR_flock },
-{ "__NR_msync", __NR_msync },
-{ "__NR_readv", __NR_readv },
-{ "__NR_writev", __NR_writev },
-{ "__NR_getsid", __NR_getsid },
-{ "__NR_fdatasync", __NR_fdatasync },
-{ "__NR__sysctl", __NR__sysctl },
-{ "__NR_mlock", __NR_mlock },
-{ "__NR_munlock", __NR_munlock },
-{ "__NR_mlockall", __NR_mlockall },
-{ "__NR_munlockall", __NR_munlockall },
-{ "__NR_sched_setparam", __NR_sched_setparam },
-{ "__NR_sched_getparam", __NR_sched_getparam },
-{ "__NR_sched_setscheduler", __NR_sched_setscheduler },
-{ "__NR_sched_getscheduler", __NR_sched_getscheduler },
-{ "__NR_sched_yield", __NR_sched_yield },
-{ "__NR_sched_get_priority_max", __NR_sched_get_priority_max },
-{ "__NR_sched_get_priority_min", __NR_sched_get_priority_min },
-{ "__NR_sched_rr_get_interval", __NR_sched_rr_get_interval },
-{ "__NR_nanosleep", __NR_nanosleep },
-{ "__NR_mremap", __NR_mremap },
-{ "__NR_setresuid", __NR_setresuid },
-{ "__NR_getresuid", __NR_getresuid },
-{ "__NR_vm86", __NR_vm86 },
-{ "__NR_query_module", __NR_query_module },
-{ "__NR_poll", __NR_poll },
-{ "__NR_nfsservctl", __NR_nfsservctl },
-{ "__NR_setresgid", __NR_setresgid },
-{ "__NR_getresgid", __NR_getresgid },
-{ "__NR_prctl", __NR_prctl },
-{ "__NR_rt_sigreturn", __NR_rt_sigreturn },
-{ "__NR_rt_sigaction", __NR_rt_sigaction },
-{ "__NR_rt_sigprocmask", __NR_rt_sigprocmask },
-{ "__NR_rt_sigpending", __NR_rt_sigpending },
-{ "__NR_rt_sigtimedwait", __NR_rt_sigtimedwait },
-{ "__NR_rt_sigqueueinfo", __NR_rt_sigqueueinfo },
-{ "__NR_rt_sigsuspend", __NR_rt_sigsuspend },
-{ "__NR_pread64", __NR_pread64 },
-{ "__NR_pwrite64", __NR_pwrite64 },
-{ "__NR_chown", __NR_chown },
-{ "__NR_getcwd", __NR_getcwd },
-{ "__NR_capget", __NR_capget },
-{ "__NR_capset", __NR_capset },
-{ "__NR_sigaltstack", __NR_sigaltstack },
-{ "__NR_sendfile", __NR_sendfile },
-{ "__NR_getpmsg", __NR_getpmsg },
-{ "__NR_putpmsg", __NR_putpmsg },
-{ "__NR_vfork", __NR_vfork },
-{ "__NR_ugetrlimit", __NR_ugetrlimit },
-{ "__NR_mmap2", __NR_mmap2 },
-{ "__NR_truncate64", __NR_truncate64 },
-{ "__NR_ftruncate64", __NR_ftruncate64 },
-{ "__NR_stat64", __NR_stat64 },
-{ "__NR_lstat64", __NR_lstat64 },
-{ "__NR_fstat64", __NR_fstat64 },
-{ "__NR_lchown32", __NR_lchown32 },
-{ "__NR_getuid32", __NR_getuid32 },
-{ "__NR_getgid32", __NR_getgid32 },
-{ "__NR_geteuid32", __NR_geteuid32 },
-{ "__NR_getegid32", __NR_getegid32 },
-{ "__NR_setreuid32", __NR_setreuid32 },
-{ "__NR_setregid32", __NR_setregid32 },
-{ "__NR_getgroups32", __NR_getgroups32 },
-{ "__NR_setgroups32", __NR_setgroups32 },
-{ "__NR_fchown32", __NR_fchown32 },
-{ "__NR_setresuid32", __NR_setresuid32 },
-{ "__NR_getresuid32", __NR_getresuid32 },
-{ "__NR_setresgid32", __NR_setresgid32 },
-{ "__NR_getresgid32", __NR_getresgid32 },
-{ "__NR_chown32", __NR_chown32 },
-{ "__NR_setuid32", __NR_setuid32 },
-{ "__NR_setgid32", __NR_setgid32 },
-{ "__NR_setfsuid32", __NR_setfsuid32 },
-{ "__NR_setfsgid32", __NR_setfsgid32 },
-{ "__NR_pivot_root", __NR_pivot_root },
-{ "__NR_mincore", __NR_mincore },
-{ "__NR_madvise", __NR_madvise },
-{ "__NR_getdents64", __NR_getdents64 },
-{ "__NR_fcntl64", __NR_fcntl64 },
-{ "__NR_gettid", __NR_gettid },
-{ "__NR_readahead", __NR_readahead },
-{ "__NR_setxattr", __NR_setxattr },
-{ "__NR_lsetxattr", __NR_lsetxattr },
-{ "__NR_fsetxattr", __NR_fsetxattr },
-{ "__NR_getxattr", __NR_getxattr },
-{ "__NR_lgetxattr", __NR_lgetxattr },
-{ "__NR_fgetxattr", __NR_fgetxattr },
-{ "__NR_listxattr", __NR_listxattr },
-{ "__NR_llistxattr", __NR_llistxattr },
-{ "__NR_flistxattr", __NR_flistxattr },
-{ "__NR_removexattr", __NR_removexattr },
-{ "__NR_lremovexattr", __NR_lremovexattr },
-{ "__NR_fremovexattr", __NR_fremovexattr },
-{ "__NR_tkill", __NR_tkill },
-{ "__NR_sendfile64", __NR_sendfile64 },
-{ "__NR_futex", __NR_futex },
-{ "__NR_sched_setaffinity", __NR_sched_setaffinity },
-{ "__NR_sched_getaffinity", __NR_sched_getaffinity },
-{ "__NR_set_thread_area", __NR_set_thread_area },
-{ "__NR_get_thread_area", __NR_get_thread_area },
-{ "__NR_io_setup", __NR_io_setup },
-{ "__NR_io_destroy", __NR_io_destroy },
-{ "__NR_io_getevents", __NR_io_getevents },
-{ "__NR_io_submit", __NR_io_submit },
-{ "__NR_io_cancel", __NR_io_cancel },
-{ "__NR_fadvise64", __NR_fadvise64 },
-{ "__NR_exit_group", __NR_exit_group },
-{ "__NR_lookup_dcookie", __NR_lookup_dcookie },
-{ "__NR_epoll_create", __NR_epoll_create },
-{ "__NR_epoll_ctl", __NR_epoll_ctl },
-{ "__NR_epoll_wait", __NR_epoll_wait },
-{ "__NR_remap_file_pages", __NR_remap_file_pages },
-{ "__NR_set_tid_address", __NR_set_tid_address },
-{ "__NR_timer_create", __NR_timer_create },
-{ "__NR_timer_settime", __NR_timer_settime },
-{ "__NR_timer_gettime", __NR_timer_gettime },
-{ "__NR_timer_getoverrun", __NR_timer_getoverrun },
-{ "__NR_timer_delete", __NR_timer_delete },
-{ "__NR_clock_settime", __NR_clock_settime },
-{ "__NR_clock_gettime", __NR_clock_gettime },
-{ "__NR_clock_getres", __NR_clock_getres },
-{ "__NR_clock_nanosleep", __NR_clock_nanosleep },
-{ "__NR_statfs64", __NR_statfs64 },
-{ "__NR_fstatfs64", __NR_fstatfs64 },
-{ "__NR_tgkill", __NR_tgkill },
-{ "__NR_utimes", __NR_utimes },
-{ "__NR_fadvise64_64", __NR_fadvise64_64 },
-{ "__NR_vserver", __NR_vserver },
-{ "__NR_mbind", __NR_mbind },
-{ "__NR_get_mempolicy", __NR_get_mempolicy },
-{ "__NR_set_mempolicy", __NR_set_mempolicy },
-{ "__NR_mq_open", __NR_mq_open },
-{ "__NR_mq_unlink", __NR_mq_unlink },
-{ "__NR_mq_timedsend", __NR_mq_timedsend },
-{ "__NR_mq_timedreceive", __NR_mq_timedreceive },
-{ "__NR_mq_notify", __NR_mq_notify },
-{ "__NR_mq_getsetattr", __NR_mq_getsetattr },
-{ "__NR_kexec_load", __NR_kexec_load },
-{ "__NR_waitid", __NR_waitid },
-{ "__NR_add_key", __NR_add_key },
-{ "__NR_request_key", __NR_request_key },
-{ "__NR_keyctl", __NR_keyctl },
-{ "__NR_ioprio_set", __NR_ioprio_set },
-{ "__NR_ioprio_get", __NR_ioprio_get },
-{ "__NR_inotify_init", __NR_inotify_init },
-{ "__NR_inotify_add_watch", __NR_inotify_add_watch },
-{ "__NR_inotify_rm_watch", __NR_inotify_rm_watch },
-{ "__NR_migrate_pages", __NR_migrate_pages },
-{ "__NR_openat", __NR_openat },
-{ "__NR_mkdirat", __NR_mkdirat },
-{ "__NR_mknodat", __NR_mknodat },
-{ "__NR_fchownat", __NR_fchownat },
-{ "__NR_futimesat", __NR_futimesat },
-{ "__NR_fstatat64", __NR_fstatat64 },
-{ "__NR_unlinkat", __NR_unlinkat },
-{ "__NR_renameat", __NR_renameat },
-{ "__NR_linkat", __NR_linkat },
-{ "__NR_symlinkat", __NR_symlinkat },
-{ "__NR_readlinkat", __NR_readlinkat },
-{ "__NR_fchmodat", __NR_fchmodat },
-{ "__NR_faccessat", __NR_faccessat },
-{ "__NR_pselect6", __NR_pselect6 },
-{ "__NR_ppoll", __NR_ppoll },
-{ "__NR_unshare", __NR_unshare },
-{ "__NR_set_robust_list", __NR_set_robust_list },
-{ "__NR_get_robust_list", __NR_get_robust_list },
-{ "__NR_splice", __NR_splice },
-{ "__NR_sync_file_range", __NR_sync_file_range },
-{ "__NR_tee", __NR_tee },
-{ "__NR_vmsplice", __NR_vmsplice },
-{ "__NR_move_pages", __NR_move_pages },
-{ "__NR_getcpu", __NR_getcpu },
-{ "__NR_epoll_pwait", __NR_epoll_pwait },
-{ "__NR_utimensat", __NR_utimensat },
-{ "__NR_signalfd", __NR_signalfd },
-{ "__NR_timerfd_create", __NR_timerfd_create },
-{ "__NR_eventfd", __NR_eventfd },
-{ "__NR_fallocate", __NR_fallocate },
-{ "__NR_timerfd_settime", __NR_timerfd_settime },
-{ "__NR_timerfd_gettime", __NR_timerfd_gettime },
-{ "__NR_signalfd4", __NR_signalfd4 },
-{ "__NR_eventfd2", __NR_eventfd2 },
-{ "__NR_epoll_create1", __NR_epoll_create1 },
-{ "__NR_dup3", __NR_dup3 },
-{ "__NR_pipe2", __NR_pipe2 },
-{ "__NR_inotify_init1", __NR_inotify_init1 },
-{ "__NR_preadv", __NR_preadv },
-{ "__NR_pwritev", __NR_pwritev },
-{ "__NR_rt_tgsigqueueinfo", __NR_rt_tgsigqueueinfo },
-{ "__NR_perf_event_open", __NR_perf_event_open },
-{ "__NR_recvmmsg", __NR_recvmmsg },
-{ "__NR_fanotify_init", __NR_fanotify_init },
-{ "__NR_fanotify_mark", __NR_fanotify_mark },
-{ "__NR_prlimit64", __NR_prlimit64 },
-{ "__NR_name_to_handle_at", __NR_name_to_handle_at },
-{ "__NR_open_by_handle_at", __NR_open_by_handle_at },
-{ "__NR_clock_adjtime", __NR_clock_adjtime },
-{ "__NR_syncfs", __NR_syncfs },
-{ "__NR_sendmmsg", __NR_sendmmsg },
-{ "__NR_setns", __NR_setns },
-{ "__NR_process_vm_readv", __NR_process_vm_readv },
-{ "__NR_process_vm_writev", __NR_process_vm_writev },
-{ "__NR_kcmp", __NR_kcmp },
-{ "__NR_finit_module", __NR_finit_module },
+{ "restart_syscall", __NR_restart_syscall },
+{ "exit", __NR_exit },
+{ "fork", __NR_fork },
+{ "read", __NR_read },
+{ "write", __NR_write },
+{ "open", __NR_open },
+{ "close", __NR_close },
+{ "waitpid", __NR_waitpid },
+{ "creat", __NR_creat },
+{ "link", __NR_link },
+{ "unlink", __NR_unlink },
+{ "execve", __NR_execve },
+{ "chdir", __NR_chdir },
+{ "time", __NR_time },
+{ "mknod", __NR_mknod },
+{ "chmod", __NR_chmod },
+{ "lchown", __NR_lchown },
+{ "break", __NR_break },
+{ "oldstat", __NR_oldstat },
+{ "lseek", __NR_lseek },
+{ "getpid", __NR_getpid },
+{ "mount", __NR_mount },
+{ "umount", __NR_umount },
+{ "setuid", __NR_setuid },
+{ "getuid", __NR_getuid },
+{ "stime", __NR_stime },
+{ "ptrace", __NR_ptrace },
+{ "alarm", __NR_alarm },
+{ "oldfstat", __NR_oldfstat },
+{ "pause", __NR_pause },
+{ "utime", __NR_utime },
+{ "stty", __NR_stty },
+{ "gtty", __NR_gtty },
+{ "access", __NR_access },
+{ "nice", __NR_nice },
+{ "ftime", __NR_ftime },
+{ "sync", __NR_sync },
+{ "kill", __NR_kill },
+{ "rename", __NR_rename },
+{ "mkdir", __NR_mkdir },
+{ "rmdir", __NR_rmdir },
+{ "dup", __NR_dup },
+{ "pipe", __NR_pipe },
+{ "times", __NR_times },
+{ "prof", __NR_prof },
+{ "brk", __NR_brk },
+{ "setgid", __NR_setgid },
+{ "getgid", __NR_getgid },
+{ "signal", __NR_signal },
+{ "geteuid", __NR_geteuid },
+{ "getegid", __NR_getegid },
+{ "acct", __NR_acct },
+{ "umount2", __NR_umount2 },
+{ "lock", __NR_lock },
+{ "ioctl", __NR_ioctl },
+{ "fcntl", __NR_fcntl },
+{ "mpx", __NR_mpx },
+{ "setpgid", __NR_setpgid },
+{ "ulimit", __NR_ulimit },
+{ "oldolduname", __NR_oldolduname },
+{ "umask", __NR_umask },
+{ "chroot", __NR_chroot },
+{ "ustat", __NR_ustat },
+{ "dup2", __NR_dup2 },
+{ "getppid", __NR_getppid },
+{ "getpgrp", __NR_getpgrp },
+{ "setsid", __NR_setsid },
+{ "sigaction", __NR_sigaction },
+{ "sgetmask", __NR_sgetmask },
+{ "ssetmask", __NR_ssetmask },
+{ "setreuid", __NR_setreuid },
+{ "setregid", __NR_setregid },
+{ "sigsuspend", __NR_sigsuspend },
+{ "sigpending", __NR_sigpending },
+{ "sethostname", __NR_sethostname },
+{ "setrlimit", __NR_setrlimit },
+{ "getrlimit", __NR_getrlimit },
+{ "getrusage", __NR_getrusage },
+{ "gettimeofday", __NR_gettimeofday },
+{ "settimeofday", __NR_settimeofday },
+{ "getgroups", __NR_getgroups },
+{ "setgroups", __NR_setgroups },
+{ "select", __NR_select },
+{ "symlink", __NR_symlink },
+{ "oldlstat", __NR_oldlstat },
+{ "readlink", __NR_readlink },
+{ "uselib", __NR_uselib },
+{ "swapon", __NR_swapon },
+{ "reboot", __NR_reboot },
+{ "readdir", __NR_readdir },
+{ "mmap", __NR_mmap },
+{ "munmap", __NR_munmap },
+{ "truncate", __NR_truncate },
+{ "ftruncate", __NR_ftruncate },
+{ "fchmod", __NR_fchmod },
+{ "fchown", __NR_fchown },
+{ "getpriority", __NR_getpriority },
+{ "setpriority", __NR_setpriority },
+{ "profil", __NR_profil },
+{ "statfs", __NR_statfs },
+{ "fstatfs", __NR_fstatfs },
+{ "ioperm", __NR_ioperm },
+{ "socketcall", __NR_socketcall },
+{ "syslog", __NR_syslog },
+{ "setitimer", __NR_setitimer },
+{ "getitimer", __NR_getitimer },
+{ "stat", __NR_stat },
+{ "lstat", __NR_lstat },
+{ "fstat", __NR_fstat },
+{ "olduname", __NR_olduname },
+{ "iopl", __NR_iopl },
+{ "vhangup", __NR_vhangup },
+{ "idle", __NR_idle },
+{ "vm86old", __NR_vm86old },
+{ "wait4", __NR_wait4 },
+{ "swapoff", __NR_swapoff },
+{ "sysinfo", __NR_sysinfo },
+{ "ipc", __NR_ipc },
+{ "fsync", __NR_fsync },
+{ "sigreturn", __NR_sigreturn },
+{ "clone", __NR_clone },
+{ "setdomainname", __NR_setdomainname },
+{ "uname", __NR_uname },
+{ "modify_ldt", __NR_modify_ldt },
+{ "adjtimex", __NR_adjtimex },
+{ "mprotect", __NR_mprotect },
+{ "sigprocmask", __NR_sigprocmask },
+{ "create_module", __NR_create_module },
+{ "init_module", __NR_init_module },
+{ "delete_module", __NR_delete_module },
+{ "get_kernel_syms", __NR_get_kernel_syms },
+{ "quotactl", __NR_quotactl },
+{ "getpgid", __NR_getpgid },
+{ "fchdir", __NR_fchdir },
+{ "bdflush", __NR_bdflush },
+{ "sysfs", __NR_sysfs },
+{ "personality", __NR_personality },
+{ "afs_syscall", __NR_afs_syscall },
+{ "setfsuid", __NR_setfsuid },
+{ "setfsgid", __NR_setfsgid },
+{ "_llseek", __NR__llseek },
+{ "getdents", __NR_getdents },
+{ "_newselect", __NR__newselect },
+{ "flock", __NR_flock },
+{ "msync", __NR_msync },
+{ "readv", __NR_readv },
+{ "writev", __NR_writev },
+{ "getsid", __NR_getsid },
+{ "fdatasync", __NR_fdatasync },
+{ "_sysctl", __NR__sysctl },
+{ "mlock", __NR_mlock },
+{ "munlock", __NR_munlock },
+{ "mlockall", __NR_mlockall },
+{ "munlockall", __NR_munlockall },
+{ "sched_setparam", __NR_sched_setparam },
+{ "sched_getparam", __NR_sched_getparam },
+{ "sched_setscheduler", __NR_sched_setscheduler },
+{ "sched_getscheduler", __NR_sched_getscheduler },
+{ "sched_yield", __NR_sched_yield },
+{ "sched_get_priority_max", __NR_sched_get_priority_max },
+{ "sched_get_priority_min", __NR_sched_get_priority_min },
+{ "sched_rr_get_interval", __NR_sched_rr_get_interval },
+{ "nanosleep", __NR_nanosleep },
+{ "mremap", __NR_mremap },
+{ "setresuid", __NR_setresuid },
+{ "getresuid", __NR_getresuid },
+{ "vm86", __NR_vm86 },
+{ "query_module", __NR_query_module },
+{ "poll", __NR_poll },
+{ "nfsservctl", __NR_nfsservctl },
+{ "setresgid", __NR_setresgid },
+{ "getresgid", __NR_getresgid },
+{ "prctl", __NR_prctl },
+{ "rt_sigreturn", __NR_rt_sigreturn },
+{ "rt_sigaction", __NR_rt_sigaction },
+{ "rt_sigprocmask", __NR_rt_sigprocmask },
+{ "rt_sigpending", __NR_rt_sigpending },
+{ "rt_sigtimedwait", __NR_rt_sigtimedwait },
+{ "rt_sigqueueinfo", __NR_rt_sigqueueinfo },
+{ "rt_sigsuspend", __NR_rt_sigsuspend },
+{ "pread64", __NR_pread64 },
+{ "pwrite64", __NR_pwrite64 },
+{ "chown", __NR_chown },
+{ "getcwd", __NR_getcwd },
+{ "capget", __NR_capget },
+{ "capset", __NR_capset },
+{ "sigaltstack", __NR_sigaltstack },
+{ "sendfile", __NR_sendfile },
+{ "getpmsg", __NR_getpmsg },
+{ "putpmsg", __NR_putpmsg },
+{ "vfork", __NR_vfork },
+{ "ugetrlimit", __NR_ugetrlimit },
+{ "mmap2", __NR_mmap2 },
+{ "truncate64", __NR_truncate64 },
+{ "ftruncate64", __NR_ftruncate64 },
+{ "stat64", __NR_stat64 },
+{ "lstat64", __NR_lstat64 },
+{ "fstat64", __NR_fstat64 },
+{ "lchown32", __NR_lchown32 },
+{ "getuid32", __NR_getuid32 },
+{ "getgid32", __NR_getgid32 },
+{ "geteuid32", __NR_geteuid32 },
+{ "getegid32", __NR_getegid32 },
+{ "setreuid32", __NR_setreuid32 },
+{ "setregid32", __NR_setregid32 },
+{ "getgroups32", __NR_getgroups32 },
+{ "setgroups32", __NR_setgroups32 },
+{ "fchown32", __NR_fchown32 },
+{ "setresuid32", __NR_setresuid32 },
+{ "getresuid32", __NR_getresuid32 },
+{ "setresgid32", __NR_setresgid32 },
+{ "getresgid32", __NR_getresgid32 },
+{ "chown32", __NR_chown32 },
+{ "setuid32", __NR_setuid32 },
+{ "setgid32", __NR_setgid32 },
+{ "setfsuid32", __NR_setfsuid32 },
+{ "setfsgid32", __NR_setfsgid32 },
+{ "pivot_root", __NR_pivot_root },
+{ "mincore", __NR_mincore },
+{ "madvise", __NR_madvise },
+{ "getdents64", __NR_getdents64 },
+{ "fcntl64", __NR_fcntl64 },
+{ "gettid", __NR_gettid },
+{ "readahead", __NR_readahead },
+{ "setxattr", __NR_setxattr },
+{ "lsetxattr", __NR_lsetxattr },
+{ "fsetxattr", __NR_fsetxattr },
+{ "getxattr", __NR_getxattr },
+{ "lgetxattr", __NR_lgetxattr },
+{ "fgetxattr", __NR_fgetxattr },
+{ "listxattr", __NR_listxattr },
+{ "llistxattr", __NR_llistxattr },
+{ "flistxattr", __NR_flistxattr },
+{ "removexattr", __NR_removexattr },
+{ "lremovexattr", __NR_lremovexattr },
+{ "fremovexattr", __NR_fremovexattr },
+{ "tkill", __NR_tkill },
+{ "sendfile64", __NR_sendfile64 },
+{ "futex", __NR_futex },
+{ "sched_setaffinity", __NR_sched_setaffinity },
+{ "sched_getaffinity", __NR_sched_getaffinity },
+{ "set_thread_area", __NR_set_thread_area },
+{ "get_thread_area", __NR_get_thread_area },
+{ "io_setup", __NR_io_setup },
+{ "io_destroy", __NR_io_destroy },
+{ "io_getevents", __NR_io_getevents },
+{ "io_submit", __NR_io_submit },
+{ "io_cancel", __NR_io_cancel },
+{ "fadvise64", __NR_fadvise64 },
+{ "exit_group", __NR_exit_group },
+{ "lookup_dcookie", __NR_lookup_dcookie },
+{ "epoll_create", __NR_epoll_create },
+{ "epoll_ctl", __NR_epoll_ctl },
+{ "epoll_wait", __NR_epoll_wait },
+{ "remap_file_pages", __NR_remap_file_pages },
+{ "set_tid_address", __NR_set_tid_address },
+{ "timer_create", __NR_timer_create },
+{ "timer_settime", __NR_timer_settime },
+{ "timer_gettime", __NR_timer_gettime },
+{ "timer_getoverrun", __NR_timer_getoverrun },
+{ "timer_delete", __NR_timer_delete },
+{ "clock_settime", __NR_clock_settime },
+{ "clock_gettime", __NR_clock_gettime },
+{ "clock_getres", __NR_clock_getres },
+{ "clock_nanosleep", __NR_clock_nanosleep },
+{ "statfs64", __NR_statfs64 },
+{ "fstatfs64", __NR_fstatfs64 },
+{ "tgkill", __NR_tgkill },
+{ "utimes", __NR_utimes },
+{ "fadvise64_64", __NR_fadvise64_64 },
+{ "vserver", __NR_vserver },
+{ "mbind", __NR_mbind },
+{ "get_mempolicy", __NR_get_mempolicy },
+{ "set_mempolicy", __NR_set_mempolicy },
+{ "mq_open", __NR_mq_open },
+{ "mq_unlink", __NR_mq_unlink },
+{ "mq_timedsend", __NR_mq_timedsend },
+{ "mq_timedreceive", __NR_mq_timedreceive },
+{ "mq_notify", __NR_mq_notify },
+{ "mq_getsetattr", __NR_mq_getsetattr },
+{ "kexec_load", __NR_kexec_load },
+{ "waitid", __NR_waitid },
+{ "add_key", __NR_add_key },
+{ "request_key", __NR_request_key },
+{ "keyctl", __NR_keyctl },
+{ "ioprio_set", __NR_ioprio_set },
+{ "ioprio_get", __NR_ioprio_get },
+{ "inotify_init", __NR_inotify_init },
+{ "inotify_add_watch", __NR_inotify_add_watch },
+{ "inotify_rm_watch", __NR_inotify_rm_watch },
+{ "migrate_pages", __NR_migrate_pages },
+{ "openat", __NR_openat },
+{ "mkdirat", __NR_mkdirat },
+{ "mknodat", __NR_mknodat },
+{ "fchownat", __NR_fchownat },
+{ "futimesat", __NR_futimesat },
+{ "fstatat64", __NR_fstatat64 },
+{ "unlinkat", __NR_unlinkat },
+{ "renameat", __NR_renameat },
+{ "linkat", __NR_linkat },
+{ "symlinkat", __NR_symlinkat },
+{ "readlinkat", __NR_readlinkat },
+{ "fchmodat", __NR_fchmodat },
+{ "faccessat", __NR_faccessat },
+{ "pselect6", __NR_pselect6 },
+{ "ppoll", __NR_ppoll },
+{ "unshare", __NR_unshare },
+{ "set_robust_list", __NR_set_robust_list },
+{ "get_robust_list", __NR_get_robust_list },
+{ "splice", __NR_splice },
+{ "sync_file_range", __NR_sync_file_range },
+{ "tee", __NR_tee },
+{ "vmsplice", __NR_vmsplice },
+{ "move_pages", __NR_move_pages },
+{ "getcpu", __NR_getcpu },
+{ "epoll_pwait", __NR_epoll_pwait },
+{ "utimensat", __NR_utimensat },
+{ "signalfd", __NR_signalfd },
+{ "timerfd_create", __NR_timerfd_create },
+{ "eventfd", __NR_eventfd },
+{ "fallocate", __NR_fallocate },
+{ "timerfd_settime", __NR_timerfd_settime },
+{ "timerfd_gettime", __NR_timerfd_gettime },
+{ "signalfd4", __NR_signalfd4 },
+{ "eventfd2", __NR_eventfd2 },
+{ "epoll_create1", __NR_epoll_create1 },
+{ "dup3", __NR_dup3 },
+{ "pipe2", __NR_pipe2 },
+{ "inotify_init1", __NR_inotify_init1 },
+{ "preadv", __NR_preadv },
+{ "pwritev", __NR_pwritev },
+{ "rt_tgsigqueueinfo", __NR_rt_tgsigqueueinfo },
+{ "perf_event_open", __NR_perf_event_open },
+{ "recvmmsg", __NR_recvmmsg },
+{ "fanotify_init", __NR_fanotify_init },
+{ "fanotify_mark", __NR_fanotify_mark },
+{ "prlimit64", __NR_prlimit64 },
+{ "name_to_handle_at", __NR_name_to_handle_at },
+{ "open_by_handle_at", __NR_open_by_handle_at },
+{ "clock_adjtime", __NR_clock_adjtime },
+{ "syncfs", __NR_syncfs },
+{ "sendmmsg", __NR_sendmmsg },
+{ "setns", __NR_setns },
+{ "process_vm_readv", __NR_process_vm_readv },
+{ "process_vm_writev", __NR_process_vm_writev },
+{ "kcmp", __NR_kcmp },
+{ "finit_module", __NR_finit_module },
 /* 3.10 */
-{ "__NR_sched_setattr", __NR_sched_setattr },
-{ "__NR_sched_getattr", __NR_sched_getattr },
-{ "__NR_renameat2", __NR_renameat2 },
+{ "sched_setattr", __NR_sched_setattr },
+{ "sched_getattr", __NR_sched_getattr },
+{ "renameat2", __NR_renameat2 },
 /* 3.17 */
-{ "__NR_seccomp", __NR_seccomp },
-{ "__NR_getrandom", __NR_getrandom },
-{ "__NR_memfd_create", __NR_memfd_create },
-{ "__NR_bpf", __NR_bpf },
-{ "__NR_execveat", __NR_execveat },
+{ "seccomp", __NR_seccomp },
+{ "getrandom", __NR_getrandom },
+{ "memfd_create", __NR_memfd_create },
+{ "bpf", __NR_bpf },
+{ "execveat", __NR_execveat },
 
 
 /* 4.3
  * fine grained socket calls,
  * TODO warning if socketcall is whitelisted with these enabled
  */
-/*{ "__NR_socket", __NR_socket },
-{ "__NR_socketpair", __NR_socketpair },
-{ "__NR_bind", __NR_bind },
-{ "__NR_connect", __NR_connect },
-{ "__NR_listen", __NR_listen },
-{ "__NR_accept4", __NR_accept4 },
-{ "__NR_getsockopt", __NR_getsockopt },
-{ "__NR_setsockopt", __NR_setsockopt },
-{ "__NR_getsockname", __NR_getsockname },
-{ "__NR_getpeername", __NR_getpeername },
-{ "__NR_sendto", __NR_sendto },
-{ "__NR_sendmsg", __NR_sendmsg },
-{ "__NR_recvfrom", __NR_recvfrom },
-{ "__NR_recvmsg", __NR_recvmsg },
-{ "__NR_shutdown", __NR_shutdown },
-{ "__NR_userfaultfd", __NR_userfaultfd },
-{ "__NR_membarrier", __NR_membarrier },
+/*{ "socket", __NR_socket },
+{ "socketpair", __NR_socketpair },
+{ "bind", __NR_bind },
+{ "connect", __NR_connect },
+{ "listen", __NR_listen },
+{ "accept4", __NR_accept4 },
+{ "getsockopt", __NR_getsockopt },
+{ "setsockopt", __NR_setsockopt },
+{ "getsockname", __NR_getsockname },
+{ "getpeername", __NR_getpeername },
+{ "sendto", __NR_sendto },
+{ "sendmsg", __NR_sendmsg },
+{ "recvfrom", __NR_recvfrom },
+{ "recvmsg", __NR_recvmsg },
+{ "shutdown", __NR_shutdown },
+{ "userfaultfd", __NR_userfaultfd },
+{ "membarrier", __NR_membarrier },
 TODO update this, lol
 */
 };
@@ -601,6 +601,12 @@ char *cap_getname(int cap_nr)
 	return NULL;
 }
 
+void seccomp_program_init(struct seccomp_program *filter)
+{
+	memset(filter, 0, sizeof(struct seccomp_program));
+	filter->retaction = SECCOMP_RET_ERRNO;
+}
+
 /*
  * de-uglify seccomp-bpf instructions
  * note: i is incremented by this macro!
@@ -611,7 +617,8 @@ char *cap_getname(int cap_nr)
 	p__[i__].jt   = t__;				\
 	p__[i__].jf   = f__;				\
 	p__[i__].k    = k__;				\
-	++i__;						\
+	if (++i__ >= MAX_BPFSTACK)			\
+		_exit(-1);				\
 }
 #define SECBPF_LD_ABSW(p_,i_,k_)   SECBPF_INSTR(p_,i_,(BPF_LD|BPF_W|BPF_ABS),0,0,k_)
 #define SECBPF_JEQ(p_,i_,k_,t_,f_) SECBPF_INSTR(p_,i_,(BPF_JMP|BPF_JEQ|BPF_K),t_,f_,k_)
@@ -621,11 +628,7 @@ char *cap_getname(int cap_nr)
 #define SECDAT_ARCH                offsetof(struct seccomp_data,arch)
 #define SECDAT_NR                  offsetof(struct seccomp_data,nr)
 
-static struct sock_filter *build_seccomp_filter(int *whitelist,
-						int *blocklist,
-						unsigned int *instr_count,
-						unsigned int  options,
-						long retaction)
+static int build_graylist_filter(struct seccomp_program *filter)
 {
 	unsigned int i,z;
 	unsigned int proglen;
@@ -633,40 +636,40 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	unsigned int bcount;
 	unsigned int count;
 	struct sock_filter *prog = NULL;
+	int *whitelist;
+	int *blocklist;
 
-	bcount = count_syscalls(blocklist, MAX_SYSCALLS);
-	wcount = count_syscalls(whitelist, MAX_SYSCALLS);
-
-	if (bcount > 0 && wcount <= 0) {
-		printf("error, cannot use seccomp_block without any seccomp_allow\n");
-		return NULL;
-	}
+	whitelist = filter->white.list;
+	blocklist = filter->black.list;
+	wcount    = filter->white.count;
+	bcount    = filter->black.count;
+	if (bcount && !blocklist)
+		return -1;
+	if (wcount && !whitelist)
+		return -1;
 	count = wcount + bcount;
 	if (count >= MAX_SYSCALLS) {
 		printf("seccomp syscall count(%d+%d) error\n", wcount, bcount);
 		printf("%d syscalls allowed\n", MAX_SYSCALLS);
-		return NULL;
+		return -1;
 	}
 
-	if (retaction == SECCOMP_RET_TRAP) {
-		options |= SECCOPT_BLOCKNEW;
+	if (filter->retaction == SECCOMP_RET_TRAP) {
+		filter->seccomp_opts |= SECCOPT_BLOCKNEW;
 	}
 
 	/* arch validation, load number, call list, ret action */
 	proglen = 4 + (count * 2) + 1;
 	/* sigreturn, exit, and exit_group */
 	proglen += 6;
-	if (options & SECCOPT_BLOCKNEW) {
+	if (filter->seccomp_opts & SECCOPT_BLOCKNEW) {
 		proglen += 7;
 	}
-	if (!(options & SECCOPT_PTRACE)) {
+	if (!(filter->seccomp_opts & SECCOPT_PTRACE)) {
 		proglen += 2;
 	}
 
-
-	prog = malloc(proglen * sizeof(struct sock_filter));
-	if (prog == NULL)
-		return NULL;
+	prog = filter->bpf_stack;
 
 	/* create seccomp bpf filter */
 	memset(prog, 0, proglen * sizeof(struct sock_filter));
@@ -685,15 +688,14 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	  * to be safe, lets just outright banish ptrace inside sandbox
 	  * unless user requests this (ptrace debuggers/crash reporters)
 	  */
-	if (!(options & SECCOPT_PTRACE)) {
+	if (!(filter->seccomp_opts & SECCOPT_PTRACE)) {
 		SECBPF_JEQ(prog, i, __NR_ptrace, 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_KILL);
 	}
 	/* has to be done at start of filter, which degrades performance.
-	 * we can eliminate this with a new prctl to block filters
-	 * will save cpu time on high frequency system calls.
+	 * could eliminate this with a prctl to block new filters,
 	 */
-	if (options & SECCOPT_BLOCKNEW) {
+	if (filter->seccomp_opts & SECCOPT_BLOCKNEW) {
 #ifdef __NR_seccomp /* since kernel 3.17 */
 		SECBPF_JEQ(prog, i, __NR_seccomp, 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
@@ -712,17 +714,17 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	/* everything is whitelisted if count is 0, this is end of filter */
 	if (count == 0) {
 		SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-		*instr_count = proglen;
-		return prog;
+		filter->prog.len = proglen;
+		filter->prog.filter = prog;
+		return 0;
 	}
 
 	/* generate whitelist jumps */
 	for (z = 0; z < wcount; ++z)
 	{
-		if (whitelist[z] == -1) {
-			printf("invalid syscall: z(%d)\n", z);
-			free(prog);
-			return NULL;
+		if (whitelist[z] < 0) {
+			printf("invalid  wsyscall: %d\n", z);
+			return -1;
 		}
 		SECBPF_JEQ(prog, i, whitelist[z], 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
@@ -731,10 +733,9 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	/* generate blocklist jumps */
 	for (z = 0; z < bcount; ++z)
 	{
-		if (blocklist[z] == -1) {
-			printf("invalid syscall: z(%d)\n", z);
-			free(prog);
-			return NULL;
+		if (blocklist[z] < 0) {
+			printf("invalid bsyscall: %d\n", z);
+			return -1;
 		}
 		SECBPF_JEQ(prog, i, blocklist[z], 0, 1);
 		SECBPF_RET(prog,i,SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
@@ -748,7 +749,7 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 
 	/* set return action */
-	switch (retaction)
+	switch (filter->retaction)
 	{
 	case SECCOMP_RET_TRAP:
 		SECBPF_RET(prog,i,SECCOMP_RET_TRAP|(SECCRET_DENIED & SECCOMP_RET_DATA));
@@ -761,33 +762,31 @@ static struct sock_filter *build_seccomp_filter(int *whitelist,
 		break;
 	default:
 		printf("invalid return action\n");
-		free(prog);
-		return NULL;
+		return -1;
 	}
 
-	*instr_count = proglen;
-	return prog;
+	filter->prog.len = proglen;
+	filter->prog.filter = prog;
+	return 0;
 }
 
-static struct sock_filter *build_blacklist_filter(int *blocklist,
-			unsigned int *instr_count, long retaction)
+static int build_blacklist_filter(struct seccomp_program *filter)
 {
 	unsigned int i,z;
 	unsigned int proglen, bcount;
 	struct sock_filter *prog = NULL;
+	int *blacklist;
 
-	bcount = count_syscalls(blocklist, MAX_SYSCALLS);
-	if (bcount >= MAX_SYSCALLS || bcount == 0) {
-		printf("blacklist count(%d) error\n", bcount);
-		printf("%d syscalls maximum\n", MAX_SYSCALLS);
-		return NULL;
-	}
+	if (!filter || !filter->black.list)
+		return -1;
+
+	blacklist = filter->black.list;
+	bcount    = filter->black.count;
+	if (bcount >= MAX_SYSCALLS || bcount == 0)
+		return -1;
 
 	proglen = 4 + (bcount * 2) + 1;
-
-	prog = malloc(proglen * sizeof(struct sock_filter));
-	if (prog == NULL)
-		return NULL;
+	prog = filter->bpf_stack;
 
 	/* create seccomp bpf filter */
 	memset(prog, 0, proglen * sizeof(struct sock_filter));
@@ -801,16 +800,15 @@ static struct sock_filter *build_blacklist_filter(int *blocklist,
 	/* load syscall number */
 	SECBPF_LD_ABSW(prog, i, SECDAT_NR);
 
-	/* generate blocklist jumps */
+	/* generate blacklist jumps */
 	for (z = 0; z < bcount; ++z)
 	{
-		if (blocklist[z] == -1) {
+		if (blacklist[z] < 0) {
 			printf("invalid syscall: z(%d)\n", z);
-			free(prog);
-			return NULL;
+			return -1;
 		}
-		SECBPF_JEQ(prog, i, blocklist[z], 0, 1);
-		switch (retaction)
+		SECBPF_JEQ(prog, i, blacklist[z], 0, 1);
+		switch (filter->retaction)
 		{
 		case SECCOMP_RET_TRAP:
 			SECBPF_RET(prog,i,SECCOMP_RET_TRAP
@@ -825,53 +823,60 @@ static struct sock_filter *build_blacklist_filter(int *blocklist,
 			break;
 		default:
 			printf("invalid return action\n");
-			free(prog);
-			return NULL;
+			return -1;
 		}
 	}
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-	*instr_count = proglen;
-	return prog;
-}
-
-int filter_syscalls(int *whitelist, int *blocklist, unsigned int options, long retaction)
-{
-	struct sock_filter *filter;
-	struct sock_fprog prog;
-	unsigned int instr_count;
-
-	if (!whitelist && !blocklist)
-		return -1;
-	else if (!whitelist) {
-		if (blocklist) {
-			filter = build_blacklist_filter(blocklist,
-					&instr_count, retaction);
-		}
-		else {
-			printf("WARNING! no seccomp filter in use\n");
-			return 0;
-		}
-	}
-	else {
-		filter = build_seccomp_filter(whitelist, blocklist,
-				&instr_count, options, retaction);
-	}
-	if (filter == NULL)
-		return -1;
-
-	memset(&prog, 0, sizeof(prog));
-	prog.len = instr_count;
-	prog.filter = filter;
-
-	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) == -1) {
-		printf("error installing seccomp filter: %s\n", strerror(errno));
-		free(filter);
-		return -1;
-	}
-	free(filter);
+	filter->prog.filter = prog;
+	filter->prog.len = proglen;
 	return 0;
 }
 
+/* build either a straight blacklist, or mix white/blacklists */
+int seccomp_program_build(struct seccomp_program *filter)
+{
+	if (!filter)
+		return -1;
+	if (!filter->white.list && !filter->black.list)
+		return -1;
+
+	if (!filter->white.list) {
+		if (!filter->black.count) {
+			return -1;
+		}
+		if (build_blacklist_filter(filter)) {
+			printf("could not build seccomp blacklist filter\n");
+			return -1;
+		}
+	}
+	else {
+		if (!filter->white.count) {
+			return -1;
+		}
+		if (filter->black.list) {
+			if (!filter->black.count)
+				return -1;
+		}
+		if (build_graylist_filter(filter)) {
+			printf("could not build seccomp graylist filter\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int seccomp_program_install(struct seccomp_program *filter)
+{
+	if (!filter || !filter->prog.filter || !filter->prog.len)
+		return -1;
+
+	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &filter->prog) == -1) {
+		printf("error installing seccomp filter: %s\n", strerror(errno));
+		return -1;
+	}
+	return 0;
+}
 
 /*
  * capabilities listed here could potentially be used to defeat security measures
@@ -1084,25 +1089,22 @@ int eslib_fortify_install_file(char *chroot_path, char *file,
 }
 
 int eslib_fortify(char *chroot_path,
-		 uid_t set_resuid,
+		 uid_t set_resuid, /* if these are 0, no setresuid call is made */
 		 gid_t set_resgid,
-		 int  *whitelist,
-		 int  *blocklist,
-		 unsigned long seccomp_opts,
-		 int *cap_b,
-		 int *cap_e,
-		 int *cap_p,
-		 int *cap_i,
+		 struct seccomp_program *filter,
+		 int cap_b[NUM_OF_CAPS],
+		 int cap_e[NUM_OF_CAPS],
+		 int cap_p[NUM_OF_CAPS],
+		 int cap_i[NUM_OF_CAPS],
 		 unsigned long fortflags)
 {
 
-	long retaction = SECCOMP_RET_ERRNO;
 	int ignore_cap_blacklist = 0;
 	unsigned long remountflags = MS_REMOUNT
 				   | MS_NOSUID
 				   | MS_NODEV;
 
-	if (eslib_file_path_check(chroot_path))
+	if (eslib_file_path_check(chroot_path) || !filter)
 		return -1;
 
 	ignore_cap_blacklist = fortflags & ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST;
@@ -1116,7 +1118,7 @@ int eslib_fortify(char *chroot_path,
 		}
 	}
 	if (fortflags & ESLIB_FORTIFY_STRICT) {
-		retaction = SECCOMP_RET_KILL;
+		filter->retaction = SECCOMP_RET_KILL;
 	}
 
 	if (mount(chroot_path, chroot_path, "bind", MS_BIND, NULL)) {
@@ -1169,17 +1171,9 @@ int eslib_fortify(char *chroot_path,
 		printf("no new privs failed: %s\n", strerror(errno));
 		return -1;
 	}
-	if (whitelist) {
-	       if (filter_syscalls(whitelist, blocklist, seccomp_opts, retaction)) {
-			printf("unable to apply seccomp filter\n");
-			return -1;
-	       }
-	}
-	else if (blocklist) {
-		if (filter_syscalls(NULL, blocklist, seccomp_opts, retaction)) {
-			printf("unable to apply seccomp filter\n");
-			return -1;
-		}
+	if (seccomp_program_install(filter)) {
+		printf("unable to apply seccomp filter\n");
+		return -1;
 	}
 	return 0;
 }

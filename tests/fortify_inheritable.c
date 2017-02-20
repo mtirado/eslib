@@ -3,7 +3,7 @@
  *
  * caps are a minefield, this test is to illustrate how to use inheritable set
  * from a setuid launcher and exec as user. other forms of caps are not supported.
- * see comments in eslib_fortify.h regarding security issues with caps.
+ * WARNING: see comments in eslib_fortify.h regarding security issues with caps.
  *
  * note: needs setuid root (chown 0:0 && chmod u+s && su user && cd TESTDIR)
  */
@@ -91,29 +91,34 @@ int g_whitelist[] = {
 };
 void exec_prntout()
 {
+	struct seccomp_program filter;
 	int *cap_b = NULL;
 	int  cap_e[NUM_OF_CAPS];
 	int  cap_p[NUM_OF_CAPS];
 	int  cap_i[NUM_OF_CAPS];
-	int *sc_blacklist = NULL;
-	int *sc_whitelist = NULL;
-	unsigned int  cnt;
 	unsigned long mflags  = MS_NOSUID | MS_RDONLY;
 	unsigned long esflags = ESLIB_BIND_PRIVATE
 			      | ESLIB_BIND_UNBINDABLE
 			      | ESLIB_BIND_CREATE;
+	/* setup caps */
 	memset(cap_e, 0, sizeof(cap_e));
 	memset(cap_p, 0, sizeof(cap_p));
 	memset(cap_i, 0, sizeof(cap_i));
 	cap_p[CAP_NET_RAW] = 1;
 	cap_i[CAP_NET_RAW] = 1;
-
-	sc_blacklist = alloc_sysblacklist(&cnt);
-	sc_whitelist = g_whitelist;
-	if (!sc_blacklist) {
+	/* setup seccomp filter */
+	seccomp_program_init(&filter);
+	filter.black.list = alloc_sysblacklist(&filter.black.count);
+	filter.white.list = g_whitelist;
+	filter.white.count = count_syscalls(g_whitelist, MAX_SYSCALLS);
+	if (!filter.black.list) {
 		printf("unable to load blacklist file(s)\n");
 	}
-
+	if (seccomp_program_build(&filter)) {
+		printf("could not build secccomp filter\n");
+		goto fail;
+	}
+	/* build fs */
 	if (eslib_fortify_prepare(FORTDIR, 1))
 		goto fail;
 	if (eslib_fortify_install_file(FORTDIR, TESTPROG, mflags, esflags))
@@ -122,11 +127,10 @@ void exec_prntout()
 		goto fail;
 	if (eslib_fortify_install_file(FORTDIR, "/lib", mflags, esflags))
 		goto fail;
-	if (eslib_fortify(FORTDIR, 0, g_gid,
-				sc_whitelist, sc_blacklist, 0,
-				cap_b, cap_e, cap_p, cap_i,
-				0))
+	/*fortify */
+	if (eslib_fortify(FORTDIR, 0, g_gid, &filter, cap_b, cap_e, cap_p, cap_i, 0))
 		goto fail;
+	/* setup uid for exec and inherit caps */
 	if (setuid(g_uid))
 		goto fail;
 	if (seteuid(0)) /* unless euid is 0, caps will not be inherited */

@@ -8,12 +8,13 @@
 
 #include <linux/audit.h>
 #include <linux/seccomp.h>
+#include <linux/filter.h>
 
-#define MAX_SYSCALLS 1000
+#define MAX_SYSCALLS 500
 #define MAX_SYSCALL_NAME 64
 #define MAX_CAP_NAME 64
 #define NUM_OF_CAPS 64
-
+#define MAX_BPFSTACK ((MAX_SYSCALLS * 2)+64)
 /* SECCOMP_RET_DATA values,
  * this is only reliable if process only has one seccomp filter
  * and cannot install additional filters, use SECCOPT_BLOCKNEW.
@@ -33,9 +34,35 @@
 #endif
 
 /* fortify flags */
-#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* ignore the global cap blacklist	      */
+#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* dangerously ignore the cap blacklist  */
 #define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces              */
 #define ESLIB_FORTIFY_STRICT	  	   4 /* seccomp kills if not graylisted       */
+
+struct syscall_list {
+	int *list;
+	unsigned int count;
+};
+struct seccomp_program {
+	struct sock_filter  bpf_stack[MAX_BPFSTACK];
+	struct sock_fprog   prog;
+	struct syscall_list white;
+	struct syscall_list black;
+	unsigned long seccomp_opts;
+	long retaction;
+};
+void seccomp_program_init(struct seccomp_program *filter);
+/*
+ * builds a seccomp filter program for SYSCALL_ARCH.
+ * list are int[MAX_SYSCALLS] that holds syscall numbers.
+ * if whitelist is missing a simple blacklist is installed.
+ * if white & black exist,  blocklist is placed after whitelist, these syscalls
+ * will be rejected so if using ESLIB_FORTIFY_STRICT, program gets ENOSYS
+ * instead of a swift sigkill
+ *
+ * TODO blacklist opts
+ */
+int  seccomp_program_build(struct seccomp_program *filter);
+int  seccomp_program_install(struct seccomp_program *filter);
 
 /*
  * the only privileges supported are ones directly inherited, no file caps.
@@ -75,7 +102,7 @@ int eslib_fortify_prepare(char *chroot_path, int mountproc);
  * after already mounting a leaf file which could destroy mntflags on the leaf file.
  * e.g: first mount /usr as rdonly,noexec  then  /usr/bin /usr/lib as rdonly
  *
- * also if running with uid 0 you probably want to make sure everything is rdonly ;)
+ * also if running with uid 0 you probably want to make sure everything is rdonly 
  */
 int eslib_fortify_install_file(char *chroot_path, char *file,
 		int mntflags, unsigned long esflags);
@@ -83,14 +110,12 @@ int eslib_fortify_install_file(char *chroot_path, char *file,
 
 /* call this after mnt namespace is unshared and if any chroot_path mounts are setup
  * whitelist and blocklist are arrays terminated by -1
- * TODO add nonet option, and close tty
+ * TODO add close tty opt
  */
 int eslib_fortify(char *chroot_path,
 		 uid_t set_resuid, /* if these are 0, no setresuid call is made */
 		 gid_t set_resgid,
-		 int  *whitelist,
-		 int  *blocklist,
-		 unsigned long seccomp_opts,
+		 struct seccomp_program *filter,
 		 int cap_b[NUM_OF_CAPS],
 		 int cap_e[NUM_OF_CAPS],
 		 int cap_p[NUM_OF_CAPS],
@@ -109,19 +134,7 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 int cap_blacklisted(unsigned long cap);
 /* return number syscalls in array terminated by -1 */
 unsigned int count_syscalls(int *syscalls, unsigned int maxcount);
-/*
- * builds a seccomp filter program for arch specified.
- * whitelist should be an array that holds (count) syscall numbers.
- * blocklist is placed after whitelist, these syscalls will be rejected so if
- * retaction is SECCOMP_RET_KILL program gets ENOSYS instead of a swift sigkill
- *
- * if whitelist is not specified blocklist becomes a simple blacklist
- * and currently options are ignored for simple blacklist.
- * TODO fix this and add BLOCKNEW if using RET_TRAP
- * TODO use option for implicit pid1 whitelist (exec clone kill ...)
- *
- */
-int filter_syscalls(int *whitelist, int *blocklist, unsigned int options,long retaction);
+/*int filter_syscalls(struct seccomp_program *filter);*/
 /* defstring should be the syscalls #define name,
  * e.g: "__NR_fork"
  * returns the value of the define, or -1 on error
