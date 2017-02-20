@@ -35,6 +35,7 @@ int prntout()
 {
 	off_t fsize;
 	char *fdata;
+
 	printf("**********************************************************\n");
 	fsize = eslib_procfs_readfile("/proc/self/status", &fdata);
 	if (fsize <= 0)
@@ -51,14 +52,13 @@ int prntout()
 	/*execve(TESTPROG, g_null, g_null);*/
 	return 0;
 }
-int g_whitelist[] = {
+short g_whitelist[] = {
 	__NR_waitpid,
 	__NR_write,
 	__NR_rt_sigaction,
 	__NR_read,
 	__NR_open,
 	__NR_close,
-	__NR_execve,
 	__NR_chdir,
 	__NR_time,
 	__NR_lseek,
@@ -87,6 +87,7 @@ int g_whitelist[] = {
 	__NR_gettid,
 	__NR_set_thread_area,
 	__NR_pselect6,
+	__NR_execve,
 	-1
 };
 void exec_prntout()
@@ -108,12 +109,12 @@ void exec_prntout()
 	cap_i[CAP_NET_RAW] = 1;
 	/* setup seccomp filter */
 	seccomp_program_init(&filter);
-	filter.black.list = alloc_sysblacklist(&filter.black.count);
-	filter.white.list = g_whitelist;
-	filter.white.count = count_syscalls(g_whitelist, MAX_SYSCALLS);
-	if (!filter.black.list) {
+	if (syscall_list_load_sysblacklist(&filter.black))
 		printf("unable to load blacklist file(s)\n");
-	}
+	if (syscall_list_loadarray(&filter.white, g_whitelist))
+		printf("unable to load whitelist\n");
+	filter.seccomp_opts = SECCOPT_BLOCKNEW;
+	filter.retaction    = SECCOMP_RET_KILL;
 	if (seccomp_program_build(&filter)) {
 		printf("could not build secccomp filter\n");
 		goto fail;

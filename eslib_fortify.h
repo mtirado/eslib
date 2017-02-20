@@ -10,20 +10,21 @@
 #include <linux/seccomp.h>
 #include <linux/filter.h>
 
-#define MAX_SYSCALLS 500
+#define MAX_SYSCALLS 400
+#define MAX_BPFSTACK ((MAX_SYSCALLS * 2)+64)
+
 #define MAX_SYSCALL_NAME 64
 #define MAX_CAP_NAME 64
 #define NUM_OF_CAPS 64
-#define MAX_BPFSTACK ((MAX_SYSCALLS * 2)+64)
 /* SECCOMP_RET_DATA values,
  * this is only reliable if process only has one seccomp filter
  * and cannot install additional filters, use SECCOPT_BLOCKNEW.
  */
 #define SECCRET_DENIED 0xF0FF
 
-/* seccomp filter options */
-#define SECCOPT_BLOCKNEW      1 /* block additional seccomp filters     */
-#define SECCOPT_PTRACE        2 /* allow ptrace                         */
+/* seccomp_opts */
+#define SECCOPT_BLOCKNEW      	1 /* block additional seccomp filters     */
+#define SECCOPT_PTRACE        	2 /* allow ptrace                         */
 
 #ifdef __x86_64__ /* TODO this is untested... add other arch's */
 	#define SYSCALL_ARCH AUDIT_ARCH_X86_64
@@ -36,17 +37,24 @@
 /* fortify flags */
 #define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* dangerously ignore the cap blacklist  */
 #define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces              */
-#define ESLIB_FORTIFY_STRICT	  	   4 /* seccomp kills if not graylisted       */
 
 struct syscall_list {
-	int *list;
+	short list[MAX_SYSCALLS+1]; /* terminated with -1 */
 	unsigned int count;
 };
+int  syscall_list_addname(struct syscall_list *list, char *name);
+int  syscall_list_addnum(struct syscall_list *list, short num);
+int  syscall_list_loadarray(struct syscall_list *list, short *src);
+int  syscall_list_loadfile(struct syscall_list *list, char *file);
+void syscall_list_clear(struct syscall_list *list);
+/* try to load blacklist from /etc/eslib/seccomp_blacklist or other locations */
+int syscall_list_load_sysblacklist(struct syscall_list *list);
+
 struct seccomp_program {
 	struct sock_filter  bpf_stack[MAX_BPFSTACK];
-	struct sock_fprog   prog;
 	struct syscall_list white;
 	struct syscall_list black;
+	struct sock_fprog   prog;
 	unsigned long seccomp_opts;
 	long retaction;
 };
@@ -102,10 +110,10 @@ int eslib_fortify_prepare(char *chroot_path, int mountproc);
  * after already mounting a leaf file which could destroy mntflags on the leaf file.
  * e.g: first mount /usr as rdonly,noexec  then  /usr/bin /usr/lib as rdonly
  *
- * also if running with uid 0 you probably want to make sure everything is rdonly 
+ * also if running with uid 0 you probably want to make sure everything is rdonly
  */
 int eslib_fortify_install_file(char *chroot_path, char *file,
-		int mntflags, unsigned long esflags);
+		unsigned long mntflags, unsigned long esflags);
 
 
 /* call this after mnt namespace is unshared and if any chroot_path mounts are setup
@@ -123,11 +131,6 @@ int eslib_fortify(char *chroot_path,
 		 unsigned long fortflags);
 
 
-/* caller must free the syscall array returned here */
-int *alloc_seccomp_sclist(char *file, unsigned int *outcount);
-/* try to load blacklist from /etc/eslib/seccomp_blacklist or other locations,
- * caller must free the syscall array returned here*/
-int *alloc_sysblacklist(unsigned int *outcount);
 /* set caps, and if locking set secbits/no_new_privs accordingly */
 int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklist);
 /* check if capability is globally blacklisted */
@@ -139,7 +142,7 @@ unsigned int count_syscalls(int *syscalls, unsigned int maxcount);
  * e.g: "__NR_fork"
  * returns the value of the define, or -1 on error
  */
-int syscall_getnum(char *defstring);
+short syscall_getnum(char *defstring);
 /* returns pointer to string name of that system call
  * NULL if not recognized.
  */

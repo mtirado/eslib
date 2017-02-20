@@ -37,7 +37,7 @@ char *g_blacklist_files[MAX_BLACKLISTS] = {
 struct sc_translate
 {
 	char name[MAX_SYSCALL_NAME];
-	int  nr;
+	short  nr;
 };
 
 struct cap_translate
@@ -516,7 +516,7 @@ void syscall_printknown()
 	}
 }
 
-int syscall_getnum(char *defstring)
+short syscall_getnum(char *defstring)
 {
 	const unsigned int count = sizeof(sc_table) / sizeof(struct sc_translate);
 	unsigned int i;
@@ -603,8 +603,165 @@ char *cap_getname(int cap_nr)
 
 void seccomp_program_init(struct seccomp_program *filter)
 {
+	unsigned int i;
 	memset(filter, 0, sizeof(struct seccomp_program));
 	filter->retaction = SECCOMP_RET_ERRNO;
+	for (i = 0; i < MAX_SYSCALLS; ++i)
+	{
+		filter->white.list[i] = -1;
+		filter->black.list[i] = -1;
+	}
+}
+
+int syscall_list_loadarray(struct syscall_list *list, short *src)
+{
+	unsigned int i;
+	syscall_list_clear(list);
+	for (i = 0; i < MAX_SYSCALLS; ++i)
+	{
+		if (src[i] == -1) {
+			if (i == 0) {
+				printf("syscall src array is empty\n");
+				goto fail;
+			}
+			break;
+		}
+		if (src[i] < 0 || src[i] > (short)syscall_gethighest())
+			goto fail;
+		list->list[i] = src[i];
+	}
+	if (i >= MAX_SYSCALLS)
+		goto fail;
+	list->count = i;
+	return 0;
+fail:
+	syscall_list_clear(list);
+	return -1;
+}
+
+/* TODO eslib_string, and get rid of fopen/fgets to minimize libc dependency
+ *  since this lib is linux / posix specific anyway
+ *
+ *  return: number of characters chopped, -1 error
+ */
+static int chop_trailing(char *string, unsigned int size, const char match)
+{
+	unsigned int i;
+	int chopped;
+	if (!string)
+		return -1;
+	i = strnlen(string, size);
+	if (i == 0 || i >= size)
+		return -1;
+
+	chopped = 0;
+	while (1)
+	{
+		--i;
+		if(string[i] == match) {
+			string[i] = '\0';
+			if (++chopped <= 0)
+				return -1;
+		}
+		else {
+			return chopped;
+		}
+		if (i == 0) {
+			return chopped;
+		}
+	}
+	return -1;
+}
+
+
+int syscall_list_loadfile(struct syscall_list *list, char *file)
+
+{
+	short syscalls[MAX_SYSCALLS];
+	char rdline[MAX_SYSCALL_NAME*2];
+	FILE *f;
+	short syscall_nr;
+	unsigned int i;
+	unsigned int count;
+
+	if (!file || !list)
+		return -1;
+
+	f = fopen(file, "r");
+	if (f == NULL) {
+		printf("fopen(%s): %s\n", file, strerror(errno));
+		return -1;
+	}
+	for (i = 0; i < MAX_SYSCALLS; ++i)
+	{
+		syscalls[i] = -1;
+	}
+
+	count = 0;
+	while (1)
+	{
+		if (fgets(rdline, sizeof(rdline), f) == NULL) {
+			fclose(f);
+			break;
+		}
+		chop_trailing(rdline, sizeof(rdline), '\n');
+		if (rdline[0] == '\0')
+			continue;
+		syscall_nr = syscall_getnum(rdline);
+		if (syscall_nr < 0) {
+			printf("could not find syscall: %s\n", rdline);
+			goto fail;
+		}
+		syscalls[count] = syscall_nr;
+		if (++count >= MAX_SYSCALLS)
+			goto fail;
+	}
+	if (syscall_list_loadarray(list, syscalls))
+		return -1;
+	return 0;
+fail:
+	fclose(f);
+	return -1;
+}
+
+int syscall_list_load_sysblacklist(struct syscall_list *list)
+{
+	char *trypath;
+	unsigned int i;
+	for (i = 0; i < MAX_BLACKLISTS; ++i)
+	{
+		trypath = g_blacklist_files[i];
+		if (trypath == NULL)
+			continue;
+		if (syscall_list_loadfile(list, trypath) == 0)
+			return 0;
+	}
+	syscall_list_clear(list);
+	return -1;
+}
+
+int syscall_list_addnum(struct syscall_list *list, short num)
+{
+	if (list->count >= MAX_SYSCALLS-1)
+		return -1;
+	if (num < 0 || num > (short)syscall_gethighest())
+		return -1;
+	list->list[list->count] = num;
+	++list->count;
+	return 0;
+}
+int syscall_list_addname(struct syscall_list *list, char *name)
+{
+	return syscall_list_addnum(list, syscall_getnum(name));
+}
+void syscall_list_clear(struct syscall_list *list)
+{
+	int i;
+	for (i = 0; i < MAX_SYSCALLS; ++i)
+	{
+		list->list[i] = -1;
+	}
+	list->count = 0;
 }
 
 /*
@@ -636,17 +793,13 @@ static int build_graylist_filter(struct seccomp_program *filter)
 	unsigned int bcount;
 	unsigned int count;
 	struct sock_filter *prog = NULL;
-	int *whitelist;
-	int *blocklist;
+	short *whitelist;
+	short *blocklist;
 
 	whitelist = filter->white.list;
 	blocklist = filter->black.list;
 	wcount    = filter->white.count;
 	bcount    = filter->black.count;
-	if (bcount && !blocklist)
-		return -1;
-	if (wcount && !whitelist)
-		return -1;
 	count = wcount + bcount;
 	if (count >= MAX_SYSCALLS) {
 		printf("seccomp syscall count(%d+%d) error\n", wcount, bcount);
@@ -775,9 +928,9 @@ static int build_blacklist_filter(struct seccomp_program *filter)
 	unsigned int i,z;
 	unsigned int proglen, bcount;
 	struct sock_filter *prog = NULL;
-	int *blacklist;
+	short *blacklist;
 
-	if (!filter || !filter->black.list)
+	if (!filter)
 		return -1;
 
 	blacklist = filter->black.list;
@@ -837,10 +990,10 @@ int seccomp_program_build(struct seccomp_program *filter)
 {
 	if (!filter)
 		return -1;
-	if (!filter->white.list && !filter->black.list)
+	if (!filter->white.count && !filter->black.count)
 		return -1;
 
-	if (!filter->white.list) {
+	if (!filter->white.count) {
 		if (!filter->black.count) {
 			return -1;
 		}
@@ -852,10 +1005,6 @@ int seccomp_program_build(struct seccomp_program *filter)
 	else {
 		if (!filter->white.count) {
 			return -1;
-		}
-		if (filter->black.list) {
-			if (!filter->black.count)
-				return -1;
 		}
 		if (build_graylist_filter(filter)) {
 			printf("could not build seccomp graylist filter\n");
@@ -1077,7 +1226,7 @@ int eslib_fortify_prepare(char *chroot_path, int mountproc)
 }
 
 int eslib_fortify_install_file(char *chroot_path, char *file,
-		int mntflags, unsigned long esflags)
+		unsigned long mntflags, unsigned long esflags)
 {
 	char dest[MAX_SYSTEMPATH];
 	if (eslib_file_path_check(chroot_path) || eslib_file_path_check(file))
@@ -1116,9 +1265,6 @@ int eslib_fortify(char *chroot_path,
 			printf("unshare(CLONE_NEWNET): %s\n", strerror(errno));
 			return -1;
 		}
-	}
-	if (fortflags & ESLIB_FORTIFY_STRICT) {
-		filter->retaction = SECCOMP_RET_KILL;
 	}
 
 	if (mount(chroot_path, chroot_path, "bind", MS_BIND, NULL)) {
@@ -1178,111 +1324,4 @@ int eslib_fortify(char *chroot_path,
 	return 0;
 }
 
-/* TODO eslib_string, and get rid of fopen/fgets to minimize libc dependency
- *  since this lib is linux / posix specific anyway
- *
- *  return: number of characters chopped, -1 error
- */
-static int chop_trailing(char *string, unsigned int size, const char match)
-{
-	unsigned int i;
-	int chopped;
-	if (!string)
-		return -1;
-	i = strnlen(string, size);
-	if (i == 0 || i >= size)
-		return -1;
 
-	chopped = 0;
-	while (1)
-	{
-		--i;
-		if(string[i] == match) {
-			string[i] = '\0';
-			if (++chopped <= 0)
-				return -1;
-		}
-		else {
-			return chopped;
-		}
-		if (i == 0) {
-			return chopped;
-		}
-	}
-	return -1;
-}
-
-int *alloc_seccomp_sclist(char *file, unsigned int *outcount)
-{
-	int syscalls[MAX_SYSCALLS];
-	char rdline[MAX_SYSCALL_NAME*2];
-	FILE *f;
-	int syscall_nr;
-	unsigned int i;
-	unsigned int count;
-	int *outcalls = NULL;
-
-	if (!file || !outcount)
-		return NULL;
-	*outcount = 0;
-
-	f = fopen(file, "r");
-	if (f == NULL) {
-		printf("fopen(%s): %s\n", file, strerror(errno));
-		return NULL;
-	}
-	for (i = 0; i < MAX_SYSCALLS; ++i)
-	{
-		syscalls[i] = -1;
-	}
-
-	count = 0;
-	while (1)
-	{
-		if (fgets(rdline, sizeof(rdline), f) == NULL) {
-			fclose(f);
-			break;
-		}
-		chop_trailing(rdline, sizeof(rdline), '\n');
-		if (rdline[0] == '\0')
-			continue;
-		syscall_nr = syscall_getnum(rdline);
-		if (syscall_nr < 0) {
-			printf("could not find syscall: %s\n", rdline);
-			goto fail;
-		}
-		syscalls[count] = syscall_nr;
-		if (++count >= MAX_SYSCALLS)
-			goto fail;
-	}
-	outcalls = malloc(sizeof(int) * (count + 1));
-	if (outcalls == NULL)
-		return NULL;
-	*outcount = count;
-	for (i = 0; i < count; ++i)
-	{
-		outcalls[i] = syscalls[i];
-	}
-	outcalls[count] = -1;
-	return outcalls;
-fail:
-	fclose(f);
-	return NULL;
-}
-
-int *alloc_sysblacklist(unsigned int *outcount)
-{
-	char *trypath;
-	unsigned int i;
-	int *sclist = NULL;
-	for (i = 0; i < MAX_BLACKLISTS; ++i)
-	{
-		trypath = g_blacklist_files[i];
-		if (trypath == NULL)
-			continue;
-		sclist = alloc_seccomp_sclist(trypath, outcount);
-		if (sclist)
-			return sclist;
-	}
-	return NULL;
-}
