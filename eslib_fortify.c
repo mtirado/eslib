@@ -486,7 +486,7 @@ unsigned int syscall_tablesize()
 	return (sizeof(sc_table) / sizeof(struct sc_translate));
 }
 
-unsigned int syscall_gethighest()
+unsigned short syscall_gethighest()
 {
 	const unsigned int count = sizeof(sc_table) / sizeof(struct sc_translate);
 	unsigned int i;
@@ -535,7 +535,7 @@ short syscall_getnum(char *defstring)
 	return -1;
 }
 
-char *syscall_getname(long syscall_nr)
+char *syscall_getname(short syscall_nr)
 {
 	const unsigned int  count = sizeof(sc_table) / sizeof(struct sc_translate);
 	unsigned int i;
@@ -551,7 +551,7 @@ char *syscall_getname(long syscall_nr)
 	return NULL;
 }
 
-unsigned int count_syscalls(int *syscalls, unsigned int maxcount)
+unsigned int count_syscalls(short *syscalls, unsigned int maxcount)
 {
 	unsigned int i;
 

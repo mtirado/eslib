@@ -136,7 +136,7 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 /* check if capability is globally blacklisted */
 int cap_blacklisted(unsigned long cap);
 /* return number syscalls in array terminated by -1 */
-unsigned int count_syscalls(int *syscalls, unsigned int maxcount);
+unsigned int count_syscalls(short *syscalls, unsigned int maxcount);
 /*int filter_syscalls(struct seccomp_program *filter);*/
 /* defstring should be the syscalls #define name,
  * e.g: "__NR_fork"
@@ -146,13 +146,13 @@ short syscall_getnum(char *defstring);
 /* returns pointer to string name of that system call
  * NULL if not recognized.
  */
-char *syscall_getname(long syscall_nr);
+char *syscall_getname(short syscall_nr);
 /* print systemcalls in sc_translate table */
 void syscall_printknown();
 /* returns total number of systemcall entries in sc_translate table */
 unsigned int syscall_tablesize();
 /* return the highest system call number */
-unsigned int syscall_gethighest();
+unsigned short syscall_gethighest();
 /*
  * return value of capability, defined in <linux/capability.h>
  * -1/NULL is an error
