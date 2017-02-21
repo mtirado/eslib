@@ -11,7 +11,7 @@
 #include <linux/filter.h>
 
 #define MAX_SYSCALLS 400
-#define MAX_BPFSTACK ((MAX_SYSCALLS * 2)+64)
+#define MAX_BPFINSTRUCTIONS ((MAX_SYSCALLS * 2)+64)
 
 #define MAX_SYSCALL_NAME 64
 #define MAX_CAP_NAME 64
@@ -51,8 +51,9 @@ void syscall_list_clear(struct syscall_list *list);
 int syscall_list_load_sysblacklist(struct syscall_list *list);
 
 struct seccomp_program {
-	struct sock_filter  bpf_stack[MAX_BPFSTACK];
+	struct sock_filter  bpf_stack[MAX_BPFINSTRUCTIONS];
 	struct syscall_list white;
+	/* TODO whitelist call & inspect params for ioctl and whatnot */
 	struct syscall_list black;
 	struct sock_fprog   prog;
 	unsigned long seccomp_opts;

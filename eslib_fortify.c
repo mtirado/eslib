@@ -774,7 +774,7 @@ void syscall_list_clear(struct syscall_list *list)
 	p__[i__].jt   = t__;				\
 	p__[i__].jf   = f__;				\
 	p__[i__].k    = k__;				\
-	if (++i__ >= MAX_BPFSTACK)			\
+	if (++i__ >= MAX_BPFINSTRUCTIONS)		\
 		_exit(-1);				\
 }
 #define SECBPF_LD_ABSW(p_,i_,k_)   SECBPF_INSTR(p_,i_,(BPF_LD|BPF_W|BPF_ABS),0,0,k_)
@@ -813,21 +813,10 @@ static int build_graylist_filter(struct seccomp_program *filter)
 
 	/* arch validation, load number, call list, ret action */
 	proglen = 4 + (count * 2) + 1;
-	/* sigreturn, exit, and exit_group */
-	proglen += 6;
-	if (filter->seccomp_opts & SECCOPT_BLOCKNEW) {
-		proglen += 7;
-	}
-	if (!(filter->seccomp_opts & SECCOPT_PTRACE)) {
-		proglen += 2;
-	}
-
 	prog = filter->bpf_stack;
+	memset(prog, 0, MAX_BPFINSTRUCTIONS * sizeof(struct sock_filter));
 
-	/* create seccomp bpf filter */
-	memset(prog, 0, proglen * sizeof(struct sock_filter));
 	i = 0;
-
 	/* validate arch */
 	SECBPF_LD_ABSW(prog, i, SECDAT_ARCH);
 	SECBPF_JEQ(prog, i, SYSCALL_ARCH, 1, 0);
@@ -842,6 +831,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 	  * unless user requests this (ptrace debuggers/crash reporters)
 	  */
 	if (!(filter->seccomp_opts & SECCOPT_PTRACE)) {
+		proglen += 2;
 		SECBPF_JEQ(prog, i, __NR_ptrace, 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_KILL);
 	}
@@ -849,6 +839,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 	 * could eliminate this with a prctl to block new filters,
 	 */
 	if (filter->seccomp_opts & SECCOPT_BLOCKNEW) {
+		proglen += 7;
 #ifdef __NR_seccomp /* since kernel 3.17 */
 		SECBPF_JEQ(prog, i, __NR_seccomp, 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
@@ -862,7 +853,6 @@ static int build_graylist_filter(struct seccomp_program *filter)
 		SECBPF_RET(prog, i, SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
 		SECBPF_LD_ABSW(prog, i, SECDAT_NR); /* restore */
 	}
-
 
 	/* everything is whitelisted if count is 0, this is end of filter */
 	if (count == 0) {
@@ -894,6 +884,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 		SECBPF_RET(prog,i,SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
 	}
 
+	proglen += 6;
 	SECBPF_JEQ(prog, i, __NR_sigreturn, 0, 1);
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	SECBPF_JEQ(prog, i, __NR_exit, 0, 1);
@@ -935,23 +926,46 @@ static int build_blacklist_filter(struct seccomp_program *filter)
 
 	blacklist = filter->black.list;
 	bcount    = filter->black.count;
-	if (bcount >= MAX_SYSCALLS || bcount == 0)
+	if (bcount >= MAX_SYSCALLS)
 		return -1;
+
+	if (filter->retaction == SECCOMP_RET_TRAP) {
+		filter->seccomp_opts |= SECCOPT_BLOCKNEW;
+	}
 
 	proglen = 4 + (bcount * 2) + 1;
 	prog = filter->bpf_stack;
+	memset(prog, 0, MAX_BPFINSTRUCTIONS * sizeof(struct sock_filter));
 
-	/* create seccomp bpf filter */
-	memset(prog, 0, proglen * sizeof(struct sock_filter));
 	i = 0;
-
 	/* validate arch */
 	SECBPF_LD_ABSW(prog, i, SECDAT_ARCH);
 	SECBPF_JEQ(prog, i, SYSCALL_ARCH, 1, 0);
 	SECBPF_RET(prog, i, SECCOMP_RET_KILL);
-
 	/* load syscall number */
 	SECBPF_LD_ABSW(prog, i, SECDAT_NR);
+
+	/* seccomp_opts */
+	if (!(filter->seccomp_opts & SECCOPT_PTRACE)) {
+		proglen += 2;
+		SECBPF_JEQ(prog, i, __NR_ptrace, 0, 1);
+		SECBPF_RET(prog, i, SECCOMP_RET_KILL);
+	}
+	if (filter->seccomp_opts & SECCOPT_BLOCKNEW) {
+		proglen += 7;
+#ifdef __NR_seccomp /* since kernel 3.17 */
+		SECBPF_JEQ(prog, i, __NR_seccomp, 0, 1);
+		SECBPF_RET(prog, i, SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
+#else
+		SECBPF_JMP(prog, i, 1);
+		SECBPF_JMP(prog, i, 0);
+#endif
+		SECBPF_JEQ(prog, i, __NR_prctl, 0, 4);
+		SECBPF_LD_ABSW(prog, i, SECDAT_ARG0); /* load prctl arg0 */
+		SECBPF_JEQ(prog, i, PR_SET_SECCOMP, 0, 1);
+		SECBPF_RET(prog, i, SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
+		SECBPF_LD_ABSW(prog, i, SECDAT_NR); /* restore */
+	}
 
 	/* generate blacklist jumps */
 	for (z = 0; z < bcount; ++z)
@@ -990,22 +1004,14 @@ int seccomp_program_build(struct seccomp_program *filter)
 {
 	if (!filter)
 		return -1;
-	if (!filter->white.count && !filter->black.count)
-		return -1;
 
 	if (!filter->white.count) {
-		if (!filter->black.count) {
-			return -1;
-		}
 		if (build_blacklist_filter(filter)) {
 			printf("could not build seccomp blacklist filter\n");
 			return -1;
 		}
 	}
 	else {
-		if (!filter->white.count) {
-			return -1;
-		}
 		if (build_graylist_filter(filter)) {
 			printf("could not build seccomp graylist filter\n");
 			return -1;
