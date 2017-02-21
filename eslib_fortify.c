@@ -1151,23 +1151,27 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 
 		/* clear bounding set if not requested or inheriting */
 		if (cap_b && cap_b[i] == 1) {
-			if (!ignore_blacklist && cap_blacklisted(i))
-				return -1;
-		}
-		else if (cap_i && cap_i[i] != 1) {
-			if (prctl(PR_CAPBSET_DROP, i, 0, 0, 0)) {
-				if (i > CAP_LAST_CAP) {
-					break;
-				}
-				else if (errno == EINVAL) {
-					printf("cap not found: %d\n", i);
-					return -1;
-				}
-				printf("PR_CAPBSET_DROP: %s\n", strerror(errno));
+			if (!ignore_blacklist && cap_blacklisted(i)) {
 				return -1;
 			}
+			continue;
+		}
+		if (cap_i && cap_i[i] == 1) {
+			continue;
+		}
+		if (prctl(PR_CAPBSET_DROP, i, 0, 0, 0)) {
+			if (i > CAP_LAST_CAP) {
+				break;
+			}
+			else if (errno == EINVAL) {
+				printf("cap not found: %d\n", i);
+				return -1;
+			}
+			printf("PR_CAPBSET_DROP: %s\n", strerror(errno));
+			return -1;
 		}
 	}
+
 	secbits = SECBIT_KEEP_CAPS_LOCKED
 		| SECBIT_NO_SETUID_FIXUP
 		| SECBIT_NO_SETUID_FIXUP_LOCKED;
