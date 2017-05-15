@@ -961,6 +961,49 @@ struct rtattr *rtnetlink_get_attr(struct rtattr *attr, unsigned int bounds,
 	return NULL;
 }
 
+static const char *get_rtm_typestr(int type)
+{
+	switch (type)
+	{
+		case RTM_GETLINK:
+			return "RTM_GETLINK";
+		case RTM_GETADDR:
+			return "RTM_GETADDR";
+		case RTM_GETROUTE:
+			return "RTM_GETROUTE";
+		case RTM_GETNEIGH:
+			return "RTM_GETNEIGH";
+		case RTM_GETRULE:
+			return "RTM_GETRULE";
+		case RTM_GETQDISC:
+			return "RTM_GETQDISC";
+		case RTM_GETTCLASS:
+			return "RTM_GETTCLASS";
+		case RTM_GETTFILTER:
+			return "RTM_GETTFILTER";
+		case RTM_GETACTION:
+			return "RTM_GETACTION";
+		case RTM_GETMULTICAST:
+			return "RTM_GETMULTICAST";
+		case RTM_GETANYCAST:
+			return "RTM_GETANYCAST";
+		case RTM_GETNEIGHTBL:
+			return "RTM_GETNEIGHTBL";
+		case RTM_GETADDRLABEL:
+			return "RTM_GETADDRLABEL";
+		case RTM_GETDCB:
+			return "RTM_GETDCB";
+		case RTM_GETMDB:
+			return "RTM_GETMDB";
+		case RTM_GETNSID:
+			return "RTM_GETNSID";
+		case RTM_GETSTATS:
+			return "RTM_GETSTATS";
+		default:
+			return "unspecified";
+	}
+}
+
 /*
  *  dio is a struct containing function pointer with input/output pointers,
  *  type is the dump type, RTM_GETLINK, RTM_GETROUTE, etc..
@@ -983,6 +1026,7 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 	unsigned int msgdat_size = 0;
 	unsigned int tblcount = 0;
 	struct rtattr **tbl;
+	unsigned int msgcount = 0;
 
 	if (dio == NULL)
 		return -1;
@@ -1053,7 +1097,6 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 			intr = 1;
 		}
 		if (msg->nlmsg_type == NLMSG_DONE) {
-			printf("NLMSG_DONE\n");
 			break;
 		}
 		if (msg->nlmsg_type == NLMSG_ERROR) {
@@ -1078,6 +1121,8 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 			goto free_err;
 		}
 		msg = NLMSG_NEXT(msg, msgsize);
+		if (++msgcount == 0)
+			_exit(-1);
 	}
 
 	free(tbl);
@@ -1088,7 +1133,15 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 		return -1;
 	}
 	if (msgsize) {
-		printf("unexpected leftover bytes: %d\n", msgsize);
+		if (msgcount == 0) {
+			printf("empty rtnetlink msg\n");
+			printf("msg type(%d): %s\n", type, get_rtm_typestr(type));
+			return -1;
+		}
+		else {
+			printf("unexpected leftover bytes: %d\n", msgsize);
+			printf("msg type(%d): %s\n", type, get_rtm_typestr(type));
+		}
 		_exit(-1);
 	}
 
@@ -1159,10 +1212,9 @@ char *eslib_rtnetlink_getgateway(char *name)
 	rtnl_decode_setinput(&dio, &idx, sizeof(idx));
 	rtnl_decode_setoutput(&dio, g_gateway, GWSIZE);
 
-	if (eslib_rtnetlink_dump(&dio, RTM_GETROUTE)) {
-		printf("dump request failed\n");
+	if (eslib_rtnetlink_dump(&dio, RTM_GETROUTE))
 		return NULL;
-	}
-	return g_gateway;
+	else
+		return g_gateway;
 }
 
