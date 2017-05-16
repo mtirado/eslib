@@ -16,25 +16,29 @@
 
 
 /*
- * validate this is a full path, and no funny business!
+ * enforce simple absolute path rules:
  * must start with /
  * no double slashes
  * no double dots!
+ * no single dot directories!!
  * cannot end in a slash. (unless len == 1)
  */
 int eslib_file_path_check(char *path)
 {
-	int len;
-	int i;
+	size_t len;
+	size_t i;
 	int adot = 0;
 	int aslash = 0;
+	int slashing = 0;
 
 	if (path == NULL)
-	       return -1;
+		return -1;
 
 	len = strnlen(path, MAX_SYSTEMPATH);
-	if (len >= MAX_SYSTEMPATH || len == 0)
+	if (len >= MAX_SYSTEMPATH || len == 0) {
+		printf("bad pathlen(%d)\n", len);
 		return -1;
+	}
 
 	if (path[0] != '/') {
 		printf("path must begin with /\n");
@@ -52,22 +56,34 @@ int eslib_file_path_check(char *path)
 				goto bad_path;
 			}
 			adot = 1;
+			aslash = 0;
 			break;
 		case '/':
 			if (aslash) {
 				printf("// not permitted\n");
 				goto bad_path;
 			}
+			if (adot && slashing) {
+				printf("/. not permitted\n");
+				goto bad_path;
+			}
+			slashing = 1;
 			aslash = 1;
+			adot = 0;
 			break;
 		default:
+			slashing = 0;
 			adot = 0;
 			aslash = 0;
 			break;
 		}
 	}
-	if (path[i-1] == '/' && len > 1) {
+	if (len >= 2 && path[i-1] == '/') {
 		printf("trailing slash not permitted: %s\n", path);
+		return -1;
+	}
+	else if (len >= 2 && path[i-2] == '/' && path[i-1] == '.') {
+		printf("/. not permitted\n");
 		return -1;
 	}
 	return 0;
@@ -75,7 +91,6 @@ bad_path:
 	printf("bad path: %s\n", path);
 	return -1;
 }
-
 
 /*
  * copy inpath to outpath, nullify characters until at parent path
