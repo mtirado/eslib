@@ -19,7 +19,7 @@ int test_path_check()
 	buf[MAX_SYSTEMPATH-1] = '\0';
 	r = eslib_file_path_check(buf);
 	if (!r) return -1;
-	
+
 	r = eslib_file_path_check("an/invalid/path");
 	if (!r) return -1;
 	r = eslib_file_path_check("//invalid/double/slash");
