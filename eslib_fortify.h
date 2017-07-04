@@ -9,6 +9,7 @@
 #include <linux/audit.h>
 #include <linux/seccomp.h>
 #include <linux/filter.h>
+#include <linux/capability.h>
 
 #define MAX_SYSCALLS 400
 #define MAX_BPFINSTRUCTIONS ((MAX_SYSCALLS * 2)+64)
