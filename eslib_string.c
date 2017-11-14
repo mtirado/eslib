@@ -60,7 +60,7 @@ int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 {
 	unsigned int buf_idx;
 	unsigned int delim_idx;
-	unsigned int delim_count;
+	unsigned int delim_count = 0;
 
 	for (delim_idx = 0; delim_idx < DELIM_MAX; ++delim_idx)
 	{
@@ -69,7 +69,7 @@ int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 			break;
 		}
 	}
-	if (delim_count == 0) {
+	if (delim_count == 0 || delim_count >= DELIM_MAX) {
 		errno = EINVAL;
 		return -1;
 	}

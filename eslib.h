@@ -69,11 +69,9 @@ int eslib_sock_send_fd(int sock, int fd);
  */
 int eslib_sock_recv_fd(int sock, int *fd_out);
 
+/* send/recv process credentials */
 int eslib_sock_send_cred(int sock);
 int eslib_sock_recv_cred(int sock, struct ucred *out_creds);
-
-
-
 
 
 /* =====================================
@@ -269,6 +267,18 @@ int eslib_logcritical(char *name, char *msg);
 int eslib_logmsg_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logerror_t(char *name, char *msg, time_t *timer, unsigned int seconds);
 int eslib_logcritical_t(char *name, char *msg, time_t *timer, unsigned int seconds);
+
+
+/* =====================================
+ * 		string
+ * =====================================
+ */
+
+int eslib_string_is_sane(char *buf, unsigned int len);
+unsigned int eslib_string_linelen(char *buf, unsigned int size);
+int eslib_string_tokenize(char *buf, const unsigned int size, char *delimiter);
+char *eslib_string_toke(char *buf, unsigned int idx,
+		const unsigned int size, unsigned int *advance);
 
 
 /* =====================================

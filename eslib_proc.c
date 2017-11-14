@@ -282,14 +282,14 @@ off_t eslib_procfs_readfile(char *path, char **out)
 {
 	char tmp[4096];
 	char *buf, *cur;
-	off_t size, bytes;
+	off_t size, bytes_left;
 	int fd;
 	char eof_check;
 	int retries = 1000;
 
 start_over:
 	errno = 0;
-	if (--retries < 0) {
+	if (--retries <= 0) {
 		printf("proc file is changing too rapidly\n");
 		errno = EAGAIN;
 		return -1;
@@ -324,16 +324,18 @@ start_over:
 		}
 		else {
 			size += r;
+			if (size <= 0)
+				goto failure;
 		}
-	}
-	bytes = size;
-	if (size < 0) {
-		goto failure;
 	}
 	if (size == 0) {
 		close(fd);
-		return 0;
+		return 0; /* empty */
 	}
+	if (size+1 <= 1) {
+		goto failure;
+	}
+
 	if (lseek(fd, 0, SEEK_SET)) {
 		printf("lseek: %s\n", strerror(errno));
 		goto failure;
@@ -344,11 +346,11 @@ start_over:
 		goto failure;
 	}
 	cur = buf;
-	bytes = size;
+	bytes_left = size;
 	/* read file */
 	while (1)
 	{
-		int r = read(fd, cur, bytes);
+		int r = read(fd, cur, bytes_left);
 		if (r == -1 && (errno == EAGAIN || errno == EINTR)) {
 			continue;
 		}
@@ -361,12 +363,12 @@ start_over:
 			goto try_again;
 		}
 		else {
-			if (r == bytes) {
+			if (r == bytes_left) {
 				break;
 			}
-			bytes -= r;
+			bytes_left -= r;
 			cur += r;
-			if (bytes < 0)
+			if (bytes_left < 0)
 				goto failure;
 		}
 	} /* next read should be eof */

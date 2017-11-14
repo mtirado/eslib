@@ -109,6 +109,10 @@ int main()
 			goto failure;
 		}
 
+		if (eslib_string_tokenize(line, linelen, "") == 0) {
+			printf("tokenize with blank delimiter didn't fail\n");
+			goto failure;
+		}
 		if (eslib_string_tokenize(line, linelen, " \t")) {
 			printf("tokenize failed\n");
 			goto failure;
