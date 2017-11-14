@@ -52,8 +52,7 @@ int eslib_sock_create_passive(char *path, int backlog)
 	if (path == NULL)
 		return -1;
 
-	/* will be truncated at sizeof addr.sun_path - 1*/
-	if (strnlen(path, MAX_SYSTEMPATH) >= MAX_SYSTEMPATH) {
+	if (strnlen(path, sizeof(addr.sun_path)) >= sizeof(addr.sun_path)-1) {
 		printf("path too long\n");
 		return -1;
 	}
@@ -375,10 +374,3 @@ out:
 	return retval;
 
 }
-
-
-
-
-
-
-
