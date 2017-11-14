@@ -1,2 +1,2 @@
 # eslib
-C Library for OS related functions
+C Library for OS related functions, many are Linux specific.
