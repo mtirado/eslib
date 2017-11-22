@@ -15,6 +15,9 @@
 
 #include <stdio.h>
 #include <memory.h>
+#include <stdlib.h>
+#include <errno.h>
+
 #include "../eslib.h"
 
 int test_path_check()
@@ -77,6 +80,46 @@ int test_path_check()
 	return 0;
 }
 
+int test_file_read()
+{
+	char buf[16];
+	size_t flen;
+
+	system("echo '123456789' > ./testfile");
+
+	memset(buf, 0, sizeof(buf));
+	if (eslib_file_read_full("./testfile", buf, sizeof(buf)-1, &flen)) {
+		goto failure;
+	}
+	printf("file contents = {%s}\n", buf);
+	if (eslib_file_read_full("./testfile", buf, 10, &flen)) {
+		goto failure;
+	}
+	if (eslib_file_read_full("./testfile", buf, 9, &flen)) {
+		if (errno != EOVERFLOW || flen != 10) {
+			goto failure;
+		}
+	}
+	if (eslib_file_read_full("./testfile", buf, 0, &flen)) {
+		if (errno != EINVAL || flen != 0) {
+			goto failure;
+		}
+	}
+
+	if (eslib_file_read_full("/proc/self/status", buf, 10, &flen) == 0) {
+		goto failure;
+	}
+	if (errno != ENOTSUP) {
+		printf("*NOTE* procfs might have gained support for SEEK_END\n");
+		goto failure;
+	}
+	return 0;
+
+failure:
+	printf("read failed in an unexpected way\n");
+	return -1;
+}
+
 int main()
 {
 	printf("----------------------------------------------------------\n");
@@ -88,6 +131,17 @@ int main()
 	}
 	printf("----------------------------------------------------------\n");
 	printf("eslib_file_path_check: passed\n");
+	printf("----------------------------------------------------------\n");
+
+	if (test_file_read()) {
+		printf("----------------------------------------------------------\n");
+		printf("test_file_read: failed\n");
+		printf("----------------------------------------------------------\n");
+		return -1;
+	}
+
+	printf("----------------------------------------------------------\n");
+	printf("test_file_read: passed\n");
 	printf("----------------------------------------------------------\n");
 	return 0;
 

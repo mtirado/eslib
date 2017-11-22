@@ -519,3 +519,84 @@ int eslib_file_bind(char *src, char *dest,
 
 	return file_bind(src, dest, mntflags, propflags, esflags);
 }
+
+int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_len)
+{
+	struct stat st;
+	size_t bytes_read = 0;
+	off_t off;
+	ssize_t r;
+	int fd = -1;
+
+	errno = 0;
+	*out_len = 0;
+
+	if (buf_size == 0 || out_len == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	fd = open(filename, O_RDONLY|O_CLOEXEC);
+	if (fd < 0) {
+		printf("open(%s): %s\n", filename, strerror(errno));
+		return -1;
+	}
+	if (fstat(fd, &st)) {
+		printf("fstat: %s\n", strerror(errno));
+		errno = EINVAL;
+		goto err_close;
+	}
+	if (!S_ISREG(st.st_mode)) {
+		printf("file_read_full only supports regular files\n");
+		errno = EINVAL;
+		goto err_close;
+	}
+
+	r = -1;
+	while (bytes_read < buf_size)
+	{
+		r = read(fd, buf + bytes_read, buf_size - bytes_read);
+		if (r < 0 && errno != EINTR) {
+			printf("read(%s): %s\n", filename, strerror(errno));
+			goto err_close;
+		}
+		else if (r > 0) {
+			bytes_read += r;
+		}
+		else if (r == 0) {
+			break; /* eof */
+		}
+	}
+	if (bytes_read == buf_size) {
+		do {
+			char c;
+			r = read(fd, &c, 1);
+		} while (r == -1 && errno == EINTR);
+	}
+	if (r) {
+		goto ret_file_len;
+	}
+
+	close(fd);
+	*out_len = bytes_read;
+	return 0;
+
+err_close:
+	close(fd);
+	return -1;
+
+ret_file_len:
+
+	/* this will fail on procfs at least */
+	off = lseek(fd, 0, SEEK_END);
+	close(fd);
+	if (off < 0) {
+		printf("lseek: %s\n", strerror(errno));
+		errno = ENOTSUP;
+		return -1;
+	}
+	*out_len = off;
+	errno = EOVERFLOW;
+	return -1;
+
+}

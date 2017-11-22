@@ -198,6 +198,24 @@ ino_t eslib_file_getino(char *path);
  */
 int eslib_file_bind(char *src, char *dest,unsigned long mntflags,unsigned long esflags);
 
+/* read the entire file into supplied buffer.
+ *
+ * filename - path to file
+ * buf      - buffer to copy file into
+ * buf_size - size of buffer
+ * out_len  - number of bytes written to buffer
+ *
+ * returns
+ *  0 - ok
+ * -1 - error
+ * -1 + EOVERFLOW
+ *  	buffer was too small. out_len will be set to file size so caller can
+ *  	adjust buffer size, this may be 0 if file is empty.
+ * -1 + ENOTSUP
+ *      buffer was too small and file does not support lseek(SEEK_END).
+ *      caller should blindly increase the buffer size.
+ */
+int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_len);
 
 /* =====================================
  * 		process
