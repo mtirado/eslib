@@ -80,32 +80,39 @@ int test_path_check()
 	return 0;
 }
 
-int test_file_read()
+int test_file_read_full()
 {
 	char buf[16];
 	size_t flen;
 
+	/* normal file */
 	system("echo '123456789' > ./testfile");
-
-	memset(buf, 0, sizeof(buf));
-	if (eslib_file_read_full("./testfile", buf, sizeof(buf)-1, &flen)) {
+	if (eslib_file_read_full("./testfile", buf, sizeof(buf)-1, &flen))
 		goto failure;
-	}
+	buf[flen] = '\0';
 	printf("file contents = {%s}\n", buf);
-	if (eslib_file_read_full("./testfile", buf, 10, &flen)) {
+
+	if (eslib_file_read_full("./testfile", buf, 10, &flen))
 		goto failure;
-	}
 	if (eslib_file_read_full("./testfile", buf, 9, &flen)) {
-		if (errno != EOVERFLOW || flen != 10) {
+		if (errno != EOVERFLOW || flen != 10)
 			goto failure;
-		}
 	}
 	if (eslib_file_read_full("./testfile", buf, 0, &flen)) {
-		if (errno != EINVAL || flen != 0) {
+		if (errno != EINVAL || flen != 0)
 			goto failure;
-		}
 	}
 
+	/* empty file */
+	system("rm ./testfile");
+	system("touch ./testfile");
+
+	if (eslib_file_read_full("./testfile", buf, 1, &flen))
+		goto failure;
+	if (flen != 0)
+		goto failure;
+
+	/* procfs */
 	if (eslib_file_read_full("/proc/self/status", buf, 10, &flen) == 0) {
 		goto failure;
 	}
@@ -133,15 +140,15 @@ int main()
 	printf("eslib_file_path_check: passed\n");
 	printf("----------------------------------------------------------\n");
 
-	if (test_file_read()) {
+	if (test_file_read_full()) {
 		printf("----------------------------------------------------------\n");
-		printf("test_file_read: failed\n");
+		printf("test_file_read_full: failed\n");
 		printf("----------------------------------------------------------\n");
 		return -1;
 	}
 
 	printf("----------------------------------------------------------\n");
-	printf("test_file_read: passed\n");
+	printf("test_file_read_full: passed\n");
 	printf("----------------------------------------------------------\n");
 	return 0;
 
