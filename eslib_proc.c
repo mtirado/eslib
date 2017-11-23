@@ -25,6 +25,7 @@
 #include <linux/capability.h>
 
 #include "eslib.h"
+#define PROCFS_MAXREAD (4096 * 100000) /* 400MB */
 
 extern char **environ;
 extern int capget(cap_user_header_t header, const cap_user_data_t data);
@@ -292,120 +293,46 @@ err:
 
 off_t eslib_procfs_readfile(char *path, char **out)
 {
-	char tmp[4096];
-	char *buf, *cur;
-	off_t size, bytes_left;
-	int fd;
-	char eof_check;
-	int retries = 1000;
+	size_t size;
+	size_t len = 0;
+	char *buf;
+	int r;
 
-start_over:
-	errno = 0;
-	if (--retries <= 0) {
-		printf("proc file is changing too rapidly\n");
-		errno = EAGAIN;
+	size = 4096;
+	buf = malloc(size);
+	if (buf == NULL) {
+		printf("malloc(): %s\n", strerror(errno));
 		return -1;
 	}
 
-	if (!out) {
-		errno = EINVAL;
-		return -1;
-	}
-	*out = NULL;
-	buf = NULL;
-	/* open file, setup buffer */
-	fd = open(path, O_RDONLY);
-	if (fd == -1) {
-		printf("open(%s): %s\n", path, strerror(errno));
-		return -1;
-	}
-	/* get filesize, SEEK_END fails with EINVAL on procfs */
-	size = 0;
-	while (1)
+	while (size <= PROCFS_MAXREAD)
 	{
-		int r = read(fd, tmp, sizeof(tmp));
-		if (r == -1 && (errno == EAGAIN || errno == EINTR)) {
-			continue;
-		}
-		else if (r < 0) {
-			printf("read(%d): %s\n", r, strerror(errno));
-			goto failure;
-		}
-		else if (r == 0) {
+		r = eslib_file_read_full(path, buf, size-1, &len);
+		if (r == 0) {
 			break;
 		}
 		else {
-			size += r;
-			if (size <= 0)
-				goto failure;
-		}
-	}
-	if (size == 0) {
-		close(fd);
-		return 0; /* empty */
-	}
-	if (size+1 <= 1) {
-		goto failure;
-	}
-
-	if (lseek(fd, 0, SEEK_SET)) {
-		printf("lseek: %s\n", strerror(errno));
-		goto failure;
-	}
-	buf = malloc(size+1); /* + null terminator */
-	if (buf == NULL) {
-		printf("malloc: %s\n", strerror(errno));
-		goto failure;
-	}
-	cur = buf;
-	bytes_left = size;
-	/* read file */
-	while (1)
-	{
-		int r = read(fd, cur, bytes_left);
-		if (r == -1 && (errno == EAGAIN || errno == EINTR)) {
-			continue;
-		}
-		else if (r < 0) {
-			printf("read(%d): %s\n", r, strerror(errno));
-			goto failure;
-		}
-		else if (r == 0) {
-			/*printf("file shrunk\n");*/
-			goto try_again;
-		}
-		else {
-			if (r == bytes_left) {
-				break;
+			if (errno != ENOTSUP) {
+				printf("file_read_full(): %s\n", strerror(errno));
+				goto err_free;
 			}
-			bytes_left -= r;
-			cur += r;
-			if (bytes_left < 0)
-				goto failure;
+			size *= 5;
+			buf = realloc(buf, size);
+			if (buf == NULL) {
+				printf("realloc(): %s\n", strerror(errno));
+				goto err_free;
+			}
 		}
-	} /* next read should be eof */
-	if (read(fd, &eof_check, 1) != 0) {
-		/*printf("file grew\n");*/
-		goto try_again;
 	}
-
-	close(fd);
-	buf[size] = '\0';
+	if (size > PROCFS_MAXREAD || size < 4096 || len == 0)
+		goto err_free;
+	buf[len] = '\0';
 	*out = buf;
-	return size+1;
+	return len+1;
 
-try_again:
-	close(fd);
-	if(buf)
-		free(buf);
-	goto start_over;
-
-failure:
-	close(fd);
-	if (buf)
-		free(buf);
+err_free:
+	free(buf);
 	return -1;
-
 }
 
 int eslib_proc_print_caps()

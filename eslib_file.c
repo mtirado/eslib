@@ -591,7 +591,6 @@ ret_file_len:
 	off = lseek(fd, 0, SEEK_END);
 	close(fd);
 	if (off < 0) {
-		printf("lseek: %s\n", strerror(errno));
 		errno = ENOTSUP;
 		return -1;
 	}

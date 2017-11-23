@@ -108,6 +108,8 @@ static struct path_node *proc_readmounts()
 			}
 		}
 		cur = end;
+		if (cur + 1 == fsize)
+			goto done;
 	}
 
 failure:
