@@ -316,7 +316,7 @@ off_t eslib_procfs_readfile(char *path, char **out)
 				printf("file_read_full(): %s\n", strerror(errno));
 				goto err_free;
 			}
-			size *= 5;
+			size *= 2;
 			buf = realloc(buf, size);
 			if (buf == NULL) {
 				printf("realloc(): %s\n", strerror(errno));
@@ -328,7 +328,7 @@ off_t eslib_procfs_readfile(char *path, char **out)
 		goto err_free;
 	buf[len] = '\0';
 	*out = buf;
-	return len+1;
+	return len;
 
 err_free:
 	free(buf);
