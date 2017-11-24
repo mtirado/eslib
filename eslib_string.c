@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <limits.h>
+#include <stdlib.h>
 #define STR_MAX (UINT_MAX - 1)
 #define DELIM_MAX 255
 #define is_eol(chr)  ( chr == '\n' || chr == '\0' )
@@ -135,4 +136,34 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 	}
 	*advance = ++idx - cursor_start;
 	return &buf[token_start];
+}
+
+int eslib_string_to_int(char *str, int *out)
+{
+	long ret;
+	char *err = NULL;
+	char c = str[0];
+
+	errno = 0;
+
+	/* don't allow unexpected leading chars */
+	if ((c < '0' || c > '9') && c != '-' && c != '+') {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = strtol(str, &err, 10);
+	if (err == NULL || *err || errno) {
+		if (errno != ERANGE) /* overflowed */
+			errno = EINVAL;
+		return -1;
+	}
+
+	/* catch 64-bit long->int overflow */
+	if (ret > INT_MAX || ret < INT_MIN) {
+		errno = ERANGE;
+		return -1;
+	}
+	*out = (int)ret;
+	return 0;
 }

@@ -15,6 +15,8 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <errno.h>
+
 #include "../eslib.h"
 
 char single_line_file[] = "1 3 567";
@@ -42,7 +44,7 @@ only	time will  tell	\n\
 stay tuned for the stunning conclusion of\n\
 strings.c";
 
-int main()
+int test_toke()
 {
 	unsigned int i = 0;
 	unsigned int line_num = 0;
@@ -140,9 +142,75 @@ int main()
 		}
 	}
 
-	printf("test passed\n");
 	return 0;
 failure:
-	printf("test failed, line_num=%d\n", line_num);
+	printf("bad line_num=%d\n", line_num);
 	return -1;
+}
+
+int test_type_conv()
+{
+	char good[]   = "9999";
+	char good2[]  = "-12";
+	char good3[]  = "+1234567";
+	char bad[]    = "n0p3";
+	char bad2[]   = "789abc";
+	char ugly[]   = "54321 ";
+	char ugly2[]  = " 12345";
+	char nasty[]  = "1000000000000";
+	char nasty2[] = "-1000000000000";
+	int val;
+
+	if (eslib_string_to_int(good, &val))
+		return -1;
+	if (val != 9999)
+		return -1;
+	if (eslib_string_to_int(good2, &val))
+		return -1;
+	if (val != -12)
+		return -1;
+	if (eslib_string_to_int(good3, &val))
+		return -1;
+	if (val != 1234567)
+		return -1;
+	if (eslib_string_to_int(bad, &val) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_int(bad2, &val) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_int(ugly, &val) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_int(ugly2, &val) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_int(nasty, &val) == 0)
+		return -1;
+	if (errno != ERANGE)
+		return -1;
+	if (eslib_string_to_int(nasty2, &val) == 0)
+		return -1;
+	if (errno != ERANGE)
+		return -1;
+	return 0;
+}
+
+int main()
+{
+	if (test_toke()) {
+		printf("toke_failed\n");
+		return -1;
+	}
+	printf("toke passed\n");
+	if (test_type_conv()) {
+		printf("type_conv failed\n");
+		return -1;
+	}
+	printf("type_conv passed\n");
+	return 0;
 }
