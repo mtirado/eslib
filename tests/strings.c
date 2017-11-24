@@ -21,7 +21,7 @@
 
 char single_line_file[] = "1 3 567";
 
-char test_file[] = "#ignore comments\n\
+char test_file[] = "\n\
 token1 token2 token3\n\
 that  one 	was fairly standard, how about\n\
 	N	O	W	?  	  	\n\
@@ -42,7 +42,8 @@ another busted line\0 here\n\
 \n\
 only	time will  tell	\n\
 stay tuned for the stunning conclusion of\n\
-strings.c";
+strings.c\n\
+";
 
 int test_toke()
 {
@@ -53,20 +54,6 @@ int test_toke()
 	printf("%s\n", test_file);
 	printf("----------------------------------------------------------\n");
 
-	/* check line endings */
-	if (eslib_string_linelen(single_line_file, 5) < 5) {
-		printf("single_line_file linelen didn't fail\n");
-		goto failure;
-	}
-	if (eslib_string_linelen(single_line_file, 8) >= 8) {
-		printf("single_line_file missing ending\n");
-		goto failure;
-	}
-	if (eslib_string_linelen(test_file, 5) < 5) {
-		printf("test_file linelen didn't fail\n");
-		goto failure;
-	}
-
 	while (i < sizeof(test_file))
 	{
 		char *line;
@@ -76,6 +63,7 @@ int test_toke()
 		char *token;
 
 		line = &test_file[i];
+		++line_num;
 
 		linelen = eslib_string_linelen(line, sizeof(test_file) - i);
 		if (linelen >= sizeof(test_file) - i) {
@@ -83,17 +71,13 @@ int test_toke()
 			goto failure;
 		}
 		else if (linelen == 0) {
-			/* blank line */
-			if (i > 0 && test_file[i-1] == '\n')
-				++line_num;
-			++i;
+			++i; /* blank line */
 			continue;
 		}
-		++line_num;
 
 		/* ignore comments */
 		if (test_file[i] == '#') {
-			i += linelen;
+			i += linelen + 1;
 			continue;
 		}
 
@@ -103,7 +87,7 @@ int test_toke()
 				printf("insane line was not caught\n");
 				goto failure;
 			}
-			i += linelen;
+			i += linelen + 1;
 			continue;
 		}
 		else if (!eslib_string_is_sane(line, linelen)) {
@@ -203,14 +187,24 @@ int test_type_conv()
 int main()
 {
 	if (test_toke()) {
+		printf("----------------------------------------------------------\n");
 		printf("toke_failed\n");
+		printf("----------------------------------------------------------\n");
 		return -1;
 	}
+	printf("----------------------------------------------------------\n");
 	printf("toke passed\n");
+	printf("----------------------------------------------------------\n");
+	printf("\n");
 	if (test_type_conv()) {
+		printf("----------------------------------------------------------\n");
 		printf("type_conv failed\n");
+		printf("----------------------------------------------------------\n");
 		return -1;
 	}
+	printf("----------------------------------------------------------\n");
 	printf("type_conv passed\n");
+	printf("----------------------------------------------------------\n");
+	printf("\n");
 	return 0;
 }

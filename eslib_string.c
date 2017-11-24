@@ -38,7 +38,8 @@ int eslib_string_is_sane(char *buf, const unsigned int len)
 	return 1;
 }
 
-/* returns == size if missing newline, or terminator at eol */
+/* return the length of line, not including newline or terminator.
+ * returns == size if missing newline or terminator at end of buffer */
 unsigned int eslib_string_linelen(char *buf, const unsigned int size)
 {
 	unsigned int idx;
