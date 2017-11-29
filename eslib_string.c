@@ -16,10 +16,15 @@
  * note: len should never be greater than bufsize - 1
  */
 
+#define _GNU_SOURCE
 #include <errno.h>
 #include <stddef.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
+
 #define STR_MAX (UINT_MAX - 1)
 #define DELIM_MAX 255
 
@@ -172,4 +177,50 @@ int eslib_string_to_int(char *str, int *out)
 	}
 	*out = (int)ret;
 	return 0;
+}
+
+/* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
+ * printing empty string is an error
+ * printing >= size is an error
+ * vsnprintf returns < 0 on output error?
+ * size must be < INT_MAX
+ * dst buffer gets zero'd if error is encountered after vsnprintf call
+ */
+int eslib_string_sprint(char *dst, unsigned int size,
+			unsigned int *outlen, const char *fmt, ...)
+{
+	va_list args;
+	int r;
+
+	errno = 0;
+	if (size >= INT_MAX) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	va_start(args, fmt);
+	r = vsnprintf(dst, size, fmt, args);
+	va_end(args);
+
+	if (r <= 0) {
+		if (r == 0)
+			errno = ECANCELED;
+		else
+			errno = EIO; /* not sure what would cause this */
+		goto failed;
+	}
+	else if (r >= (int)size) {
+		if (outlen)
+			*outlen = r;
+		errno = EOVERFLOW;
+		goto failed;
+	}
+
+	if (outlen)
+		*outlen = r;
+	return 0;
+
+failed:
+	memset(dst, 0, size);
+	return -1;
 }

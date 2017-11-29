@@ -309,10 +309,11 @@ int eslib_string_is_sane(char *buf, unsigned int len);
 unsigned int eslib_string_linelen(char *buf, unsigned int size);
 int eslib_string_tokenize(char *buf, const unsigned int size, char *delimiter);
 char *eslib_string_toke(char *buf, unsigned int idx,
-		const unsigned int size, unsigned int *advance);
+			const unsigned int size, unsigned int *advance);
 /* sets errno to ERANGE on overflow, otherwise EINVAL */
 int eslib_string_to_int(char *str, int *out);
-
+int eslib_string_sprint(char *dst, unsigned int size,
+			unsigned int *outlen, const char *fmt, ...);
 
 /* =====================================
  * 		macros

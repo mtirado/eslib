@@ -13,10 +13,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <errno.h>
-
+#include <limits.h>
+#include <string.h>
 #include "../eslib.h"
 
 char single_line_file[] = "1 3 567";
@@ -184,6 +184,64 @@ int test_type_conv()
 	return 0;
 }
 
+static int test_sprint()
+{
+	char dst[16];
+	const char str[] = "abcd";
+	const char good_msg[] = "this fits!";
+	const char bad_msg[] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	unsigned int len;
+
+	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", bad_msg) != -1) {
+		printf("bad sprint 1 did not fail\n");
+		return -1;
+	}
+	if (errno != EOVERFLOW) {
+		printf("didn't detect massive string size\n");
+		return -1;
+	}
+
+	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", "") == 0) {
+		printf("bad sprint 2 did not fail\n");
+		return -1;
+	}
+	if (errno != ECANCELED) {
+		printf("didn't detect 0 len write\n");
+		return -1;
+	}
+
+	if (eslib_string_sprint(dst, INT_MAX, &len, "%s", good_msg) == 0) {
+		printf("bad sprint 3 did not fail\n");
+		return -1;
+	}
+	if (errno != EINVAL) {
+		printf("didn't detect massive string size input\n");
+		return -1;
+	}
+
+
+	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", good_msg)) {
+		printf("good sprint 1 failed\n");
+		return -1;
+	}
+	if (len != strlen(good_msg)) {
+		printf("unexpected len\n");
+		return -1;
+	}
+
+	/* len should be == 9 */
+	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s5%d%c", str, 678, '9')) {
+		printf("good sprint 2 failed\n");
+		return -1;
+	}
+	if (len != 9) {
+		printf("expected {%s} len == 9\n", dst);
+		return -1;
+	}
+
+	return 0;
+}
+
 int main()
 {
 	if (test_toke()) {
@@ -206,5 +264,18 @@ int main()
 	printf("type_conv passed\n");
 	printf("----------------------------------------------------------\n");
 	printf("\n");
+
+	if (test_sprint()) {
+		printf("----------------------------------------------------------\n");
+		printf("sprint failed\n");
+		printf("----------------------------------------------------------\n");
+		return -1;
+	}
+	printf("----------------------------------------------------------\n");
+	printf("sprint passed\n");
+	printf("----------------------------------------------------------\n");
+	printf("\n");
+
+
 	return 0;
 }
