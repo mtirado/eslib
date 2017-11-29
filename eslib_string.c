@@ -11,6 +11,9 @@
  * GNU General Public License for more details. You should have
  * received a copy of the GNU General Public License version 3
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * note: len should never be greater than bufsize - 1
  */
 
 #include <errno.h>
@@ -19,9 +22,12 @@
 #include <stdlib.h>
 #define STR_MAX (UINT_MAX - 1)
 #define DELIM_MAX 255
-#define is_eol(chr)  ( chr == '\n' || chr == '\0' )
 
-/* len should be at least bufsize - 1 */
+#define is_safe_ctrl(chr) (			\
+			   chr == '\n'		\
+			|| chr == '\t'		\
+)
+
 int eslib_string_is_sane(char *buf, const unsigned int len)
 {
 	unsigned int idx;
@@ -30,7 +36,7 @@ int eslib_string_is_sane(char *buf, const unsigned int len)
 		unsigned char c = buf[idx];
 		/* you're on your own for 8-bit ascii */
 		if (c < 32 || c >= 127) {
-			if (c != '\n' && c != '\t') {
+			if (!is_safe_ctrl(c)) {
 				return 0;
 			}
 		}
@@ -56,7 +62,7 @@ unsigned int eslib_string_linelen(char *buf, const unsigned int size)
 
 /* converts delimiters into null terminators, for toke consumption
  * so use a copy if you need to preserve the original data!
- * len should be at least bufsize - 1
+ *
  */
 int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 {
@@ -91,9 +97,8 @@ int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 	return 0;
 }
 
-/* len should be at least bufsize - 1,
- * advance returns how many characters to increment cursor position
- * a value of zero would indicate an error.
+/* advance returns how many characters to increment idx
+ * an idx value of zero would indicate an error.
  */
 char *eslib_string_toke(char *buf, unsigned int idx,
 		const unsigned int len, unsigned int *advance)
@@ -110,7 +115,7 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 		*advance = 1;
 		return NULL;
 	}
-	/* skip blank space */
+	/* skip leading blank space */
 	while (idx <= len)
 	{
 		if (buf[idx] != '\0')
@@ -125,9 +130,9 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 	token_start = idx;
 
 	/* get token len */
-	while (idx <= len)
+	while (idx < len + 1)
 	{
-		if (is_eol(buf[idx])) {
+		if (buf[idx] == '\0') {
 			break;
 		}
 		++idx;
