@@ -27,7 +27,7 @@ $(TEST_PROC):
 		$(CC) $(CFLAGS) -o $@ ./tests/proc.c ./eslib_file.c ./eslib_proc.c ./eslib_string.c
 $(TEST_FORTIFY_INHERITABLE):
 		@echo ""
-		$(CC) $(CFLAGS) -o $@ ./tests/fortify_inheritable.c ./eslib_fortify.c ./eslib_file.c ./eslib_proc.c
+		$(CC) $(CFLAGS) -o $@ ./tests/fortify_inheritable.c ./eslib_fortify.c ./eslib_file.c ./eslib_proc.c ./eslib_string.c
 $(TEST_FILE):
 		@echo ""
 		$(CC) $(CFLAGS) -o $@ ./tests/file.c ./eslib_file.c

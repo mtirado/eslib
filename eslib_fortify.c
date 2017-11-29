@@ -465,6 +465,9 @@ struct sc_translate sc_table[] = {
 { "bpf", __NR_bpf },
 { "execveat", __NR_execveat },
 
+#ifndef BLACKLIST_CFG_SIZE
+	#define BLACKLIST_CFG_SIZE (4096*2)
+#endif
 
 /* 4.3
  * fine grained socket calls,
@@ -649,47 +652,13 @@ fail:
 	return -1;
 }
 
-/* TODO eslib_string, and get rid of fopen/fgets to minimize libc dependency
- *  since this lib is linux / posix specific anyway
- *
- *  return: number of characters chopped, -1 error
- */
-static int chop_trailing(char *string, unsigned int size, const char match)
-{
-	unsigned int i;
-	int chopped;
-	if (!string)
-		return -1;
-	i = strnlen(string, size);
-	if (i == 0 || i >= size)
-		return -1;
-
-	chopped = 0;
-	while (1)
-	{
-		--i;
-		if(string[i] == match) {
-			string[i] = '\0';
-			if (++chopped <= 0)
-				return -1;
-		}
-		else {
-			return chopped;
-		}
-		if (i == 0) {
-			return chopped;
-		}
-	}
-	return -1;
-}
-
-
 int syscall_list_loadfile(struct syscall_list *list, char *file)
 
 {
 	short syscalls[MAX_SYSCALLS];
-	char rdline[MAX_SYSCALL_NAME*2];
-	FILE *f;
+	char fbuf[BLACKLIST_CFG_SIZE];
+	size_t flen;
+	unsigned int fpos;
 	short syscall_nr;
 	unsigned int i;
 	unsigned int count;
@@ -697,41 +666,47 @@ int syscall_list_loadfile(struct syscall_list *list, char *file)
 	if (!file || !list)
 		return -1;
 
-	f = fopen(file, "r");
-	if (f == NULL) {
-		printf("fopen(%s): %s\n", file, strerror(errno));
+	memset(fbuf, 0, sizeof(fbuf));
+	for (i = 0; i < MAX_SYSCALLS; ++i)
+		syscalls[i] = -1;
+
+	if (eslib_file_read_full(file, fbuf, BLACKLIST_CFG_SIZE-1, &flen)) {
+		printf("problem reading file: %s\n", strerror(errno));
 		return -1;
 	}
-	for (i = 0; i < MAX_SYSCALLS; ++i)
-	{
-		syscalls[i] = -1;
+	if (eslib_string_tokenize(fbuf, flen, "\n")) {
+		printf("tokenize file failed\n");
+		return -1;
 	}
-
 	count = 0;
-	while (1)
+	fpos = 0;
+	while (fpos < flen)
 	{
-		if (fgets(rdline, sizeof(rdline), f) == NULL) {
-			fclose(f);
-			break;
-		}
-		chop_trailing(rdline, sizeof(rdline), '\n');
-		if (rdline[0] == '\0')
+		unsigned int advance = 0;
+		char *line = eslib_string_toke(fbuf, fpos, flen, &advance);
+		if (line == NULL || *line == '#') {
+			if (advance == 0)
+				return -1;
+			fpos += advance;
 			continue;
-		syscall_nr = syscall_getnum(rdline);
+		}
+		fpos += advance;
+
+		syscall_nr = syscall_getnum(line);
 		if (syscall_nr < 0) {
-			printf("could not find syscall: %s\n", rdline);
-			goto fail;
+			printf("could not find syscall: %s\n", line);
+			if (*line == ' ' || *line == '\t') {
+				printf("leading whitespace not supported\n");
+			}
+			return -1;
 		}
 		syscalls[count] = syscall_nr;
 		if (++count >= MAX_SYSCALLS)
-			goto fail;
+			return -1;
 	}
 	if (syscall_list_loadarray(list, syscalls))
 		return -1;
 	return 0;
-fail:
-	fclose(f);
-	return -1;
 }
 
 int syscall_list_load_sysblacklist(struct syscall_list *list)
