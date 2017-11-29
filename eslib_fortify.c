@@ -1123,17 +1123,14 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 		if (cap_e && cap_e[i]) {
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
-			printf("effective: %s\n", cap_getname(i));
 			data[CAP_TO_INDEX(i)].effective |= CAP_TO_MASK(i);
 		}
 		if (cap_p && cap_p[i]) {
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
-			printf("permitted: %s\n", cap_getname(i));
 			data[CAP_TO_INDEX(i)].permitted	|= CAP_TO_MASK(i);
 		}
 		if (cap_i && cap_i[i]) {
-			printf("inherited: %s\n", cap_getname(i));
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
 			data[CAP_TO_INDEX(i)].inheritable |= CAP_TO_MASK(i);
