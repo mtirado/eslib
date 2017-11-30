@@ -202,8 +202,8 @@ static int test_sprintf()
 		return -1;
 	}
 
-	if (es_sprintf(dst, sizeof(dst), &len, "%s", "")) {
-		printf("bad sprintf 2 failed\n");
+	if (es_sprintf(dst, sizeof(dst), &len, "%s", "") != -1) {
+		printf("bad sprintf 2 didn't fail\n");
 		return -1;
 	}
 	if (errno != ECANCELED) {
@@ -211,7 +211,7 @@ static int test_sprintf()
 		return -1;
 	}
 
-	if (es_sprintf(dst, INT_MAX, &len, "%s", good_msg) == 0) {
+	if (es_sprintf(dst, INT_MAX, &len, "%s", good_msg) != -1) {
 		printf("bad sprintf 3 did not fail\n");
 		return -1;
 	}
@@ -258,7 +258,7 @@ static int test_copy()
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
-	if (es_strcopy(dst, "", sizeof(dst), &len))
+	if (es_strcopy(dst, "", sizeof(dst), &len) == 0)
 		return -1;
 	if (errno != ECANCELED || len != 0)
 		return -1;

@@ -183,15 +183,15 @@ int eslib_string_to_int(char *str, int *out)
 }
 
 /* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
- * printing >= size is an error
- * vsnprintf returns < 0 on output error?
  * size must be < INT_MAX
- * dst buffer gets zero'd if error is encountered after vsnprintf call
+ * printing 0 chars or >= size is an error, but copy truncated string anyway
+ * dst buffer gets fully zero'd if error is encountered in vsnprintf call
  */
 int eslib_string_sprintf(char *dst, const unsigned int size,
 			unsigned int *outlen, const char *fmt, ...)
 {
 	va_list args;
+	int ret = 0;
 	int r;
 
 	errno = 0;
@@ -206,51 +206,60 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 
 	if (r == 0) {
 		errno = ECANCELED;
+		ret = -1;
 	}
-	if (r < 0) {
-		errno = EIO; /* not sure what would cause this */
+	else if (r < 0) {
+		errno = EIO;
 		goto failed;
 	}
 	else if (r >= (int)size) {
 		errno = EOVERFLOW;
-		goto failed;
+		ret = -1;
+		r = size - 1;
 	}
 
 	if (outlen)
 		*outlen = r;
-	return 0;
+
+	return ret;
 
 failed:
 	memset(dst, 0, size);
 	return -1;
 }
 
+/*
+ * copying len 0 or >= size is an error, but copy truncated string anyway.
+ * size must be < INT_MAX
+ */
 int eslib_string_copy(char *dst,
 		      const char *src,
 		      const unsigned int size,
 		      unsigned int *outlen)
 {
 	size_t len;
+	int ret = 0;
 	errno = 0;
 	if (size >= INT_MAX) {
 		errno = EINVAL;
 		return -1;
 	}
+
 	len = strnlen(src, size);
 	if (len >= size) {
+		ret = -1;
 		errno = EOVERFLOW;
-		return -1;
+		len = size - 1;
 	}
 	else if (len == 0) {
-		memset(dst, 0, size);
-		if (outlen)
-			*outlen = 0;
+		ret = -1;
 		errno = ECANCELED;
-		return 0;
 	}
+
 	memcpy(dst, src, len);
 	dst[len] = '\0';
 	if (outlen)
 		*outlen = (unsigned int)len;
-	return 0;
+
+	return ret;
 }
