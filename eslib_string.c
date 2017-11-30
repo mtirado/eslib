@@ -28,8 +28,9 @@
 #define STR_MAX (UINT_MAX - 1)
 #define DELIM_MAX 255
 
-#define is_safe_ctrl(chr) (			\
-			   chr == '\n'		\
+#define safe_char(chr) (			\
+			   chr == ' '		\
+			|| chr == '\n'		\
 			|| chr == '\t'		\
 )
 
@@ -41,7 +42,7 @@ int eslib_string_is_sane(char *buf, const unsigned int len)
 		unsigned char c = buf[idx];
 		/* you're on your own for 8-bit ascii */
 		if (c < 32 || c >= 127) {
-			if (!is_safe_ctrl(c)) {
+			if (!safe_char(c)) {
 				return 0;
 			}
 		}
@@ -165,14 +166,16 @@ int eslib_string_to_int(char *str, int *out)
 
 	ret = strtol(str, &err, 10);
 	if (err == NULL || *err || errno) {
-		if (errno != ERANGE) /* overflowed */
+		if (errno == ERANGE)
+			errno = EOVERFLOW;
+		else
 			errno = EINVAL;
 		return -1;
 	}
 
 	/* catch 64-bit long->int overflow */
 	if (ret > INT_MAX || ret < INT_MIN) {
-		errno = ERANGE;
+		errno = EOVERFLOW;
 		return -1;
 	}
 	*out = (int)ret;
@@ -180,13 +183,12 @@ int eslib_string_to_int(char *str, int *out)
 }
 
 /* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
- * printing empty string is an error
  * printing >= size is an error
  * vsnprintf returns < 0 on output error?
  * size must be < INT_MAX
  * dst buffer gets zero'd if error is encountered after vsnprintf call
  */
-int eslib_string_sprint(char *dst, unsigned int size,
+int eslib_string_sprintf(char *dst, const unsigned int size,
 			unsigned int *outlen, const char *fmt, ...)
 {
 	va_list args;
@@ -202,16 +204,14 @@ int eslib_string_sprint(char *dst, unsigned int size,
 	r = vsnprintf(dst, size, fmt, args);
 	va_end(args);
 
-	if (r <= 0) {
-		if (r == 0)
-			errno = ECANCELED;
-		else
-			errno = EIO; /* not sure what would cause this */
+	if (r == 0) {
+		errno = ECANCELED;
+	}
+	if (r < 0) {
+		errno = EIO; /* not sure what would cause this */
 		goto failed;
 	}
 	else if (r >= (int)size) {
-		if (outlen)
-			*outlen = r;
 		errno = EOVERFLOW;
 		goto failed;
 	}
@@ -223,4 +223,34 @@ int eslib_string_sprint(char *dst, unsigned int size,
 failed:
 	memset(dst, 0, size);
 	return -1;
+}
+
+int eslib_string_copy(char *dst,
+		      const char *src,
+		      const unsigned int size,
+		      unsigned int *outlen)
+{
+	size_t len;
+	errno = 0;
+	if (size >= INT_MAX) {
+		errno = EINVAL;
+		return -1;
+	}
+	len = strnlen(src, size);
+	if (len >= size) {
+		errno = EOVERFLOW;
+		return -1;
+	}
+	else if (len == 0) {
+		memset(dst, 0, size);
+		if (outlen)
+			*outlen = 0;
+		errno = ECANCELED;
+		return 0;
+	}
+	memcpy(dst, src, len);
+	dst[len] = '\0';
+	if (outlen)
+		*outlen = (unsigned int)len;
+	return 0;
 }

@@ -175,16 +175,16 @@ int test_type_conv()
 		return -1;
 	if (eslib_string_to_int(nasty, &val) == 0)
 		return -1;
-	if (errno != ERANGE)
+	if (errno != EOVERFLOW)
 		return -1;
 	if (eslib_string_to_int(nasty2, &val) == 0)
 		return -1;
-	if (errno != ERANGE)
+	if (errno != EOVERFLOW)
 		return -1;
 	return 0;
 }
 
-static int test_sprint()
+static int test_sprintf()
 {
 	char dst[16];
 	const char str[] = "abcd";
@@ -192,8 +192,9 @@ static int test_sprint()
 	const char bad_msg[] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	unsigned int len;
 
-	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", bad_msg) != -1) {
-		printf("bad sprint 1 did not fail\n");
+
+	if (es_sprintf(dst, sizeof(dst), &len, "%s", bad_msg) != -1) {
+		printf("bad sprintf 1 did not fail\n");
 		return -1;
 	}
 	if (errno != EOVERFLOW) {
@@ -201,8 +202,8 @@ static int test_sprint()
 		return -1;
 	}
 
-	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", "") == 0) {
-		printf("bad sprint 2 did not fail\n");
+	if (es_sprintf(dst, sizeof(dst), &len, "%s", "")) {
+		printf("bad sprintf 2 failed\n");
 		return -1;
 	}
 	if (errno != ECANCELED) {
@@ -210,8 +211,8 @@ static int test_sprint()
 		return -1;
 	}
 
-	if (eslib_string_sprint(dst, INT_MAX, &len, "%s", good_msg) == 0) {
-		printf("bad sprint 3 did not fail\n");
+	if (es_sprintf(dst, INT_MAX, &len, "%s", good_msg) == 0) {
+		printf("bad sprintf 3 did not fail\n");
 		return -1;
 	}
 	if (errno != EINVAL) {
@@ -220,8 +221,8 @@ static int test_sprint()
 	}
 
 
-	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s", good_msg)) {
-		printf("good sprint 1 failed\n");
+	if (es_sprintf(dst, sizeof(dst), &len, "%s", good_msg)) {
+		printf("good sprintf 1 failed\n");
 		return -1;
 	}
 	if (len != strlen(good_msg)) {
@@ -229,9 +230,8 @@ static int test_sprint()
 		return -1;
 	}
 
-	/* len should be == 9 */
-	if (eslib_string_sprint(dst, sizeof(dst), &len, "%s5%d%c", str, 678, '9')) {
-		printf("good sprint 2 failed\n");
+	if (es_sprintf(dst, sizeof(dst), &len, "%s5%d%c", str, 678, '9')) {
+		printf("good sprintf 2 failed\n");
 		return -1;
 	}
 	if (len != 9) {
@@ -239,43 +239,62 @@ static int test_sprint()
 		return -1;
 	}
 
+
 	return 0;
+}
+
+static int test_copy()
+{
+	char dst[16];
+	const char good_msg[] = "1234567890";
+	const char bad_msg[] = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+	unsigned int len;
+
+	if (es_strcopy(dst, good_msg, sizeof(dst), &len))
+		return -1;
+	if (len != strlen(good_msg))
+		return -1;
+	if (es_strcopy(dst, bad_msg, sizeof(dst), &len) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+	if (es_strcopy(dst, "", sizeof(dst), &len))
+		return -1;
+	if (errno != ECANCELED || len != 0)
+		return -1;
+	return 0;
+}
+
+#define fail_print(str)	{								\
+		printf("----------------------------------------------------------\n"); \
+		printf("%s failed\n", str);						\
+		printf("----------------------------------------------------------\n");	\
+		return -1;								\
+}
+#define pass_print(str) {								\
+		printf("----------------------------------------------------------\n"); \
+		printf("%s passed\n", str);						\
+		printf("----------------------------------------------------------\n");	\
+		printf("\n");								\
 }
 
 int main()
 {
-	if (test_toke()) {
-		printf("----------------------------------------------------------\n");
-		printf("toke_failed\n");
-		printf("----------------------------------------------------------\n");
-		return -1;
-	}
-	printf("----------------------------------------------------------\n");
-	printf("toke passed\n");
-	printf("----------------------------------------------------------\n");
-	printf("\n");
-	if (test_type_conv()) {
-		printf("----------------------------------------------------------\n");
-		printf("type_conv failed\n");
-		printf("----------------------------------------------------------\n");
-		return -1;
-	}
-	printf("----------------------------------------------------------\n");
-	printf("type_conv passed\n");
-	printf("----------------------------------------------------------\n");
-	printf("\n");
+	if (test_toke())
+		fail_print("toke");
+	pass_print("toke");
 
-	if (test_sprint()) {
-		printf("----------------------------------------------------------\n");
-		printf("sprint failed\n");
-		printf("----------------------------------------------------------\n");
-		return -1;
-	}
-	printf("----------------------------------------------------------\n");
-	printf("sprint passed\n");
-	printf("----------------------------------------------------------\n");
-	printf("\n");
+	if (test_type_conv())
+		fail_print("type_conv");
+	pass_print("type_conv");
 
+	if (test_sprintf())
+		fail_print("sprintf");
+	pass_print("sprintf");
+
+	if (test_copy())
+		fail_print("test_copy");
+	pass_print("test_copy");
 
 	return 0;
 }

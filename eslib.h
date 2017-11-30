@@ -310,15 +310,20 @@ unsigned int eslib_string_linelen(char *buf, unsigned int size);
 int eslib_string_tokenize(char *buf, const unsigned int size, char *delimiter);
 char *eslib_string_toke(char *buf, unsigned int idx,
 			const unsigned int size, unsigned int *advance);
-/* sets errno to ERANGE on overflow, otherwise EINVAL */
 int eslib_string_to_int(char *str, int *out);
-int eslib_string_sprint(char *dst, unsigned int size,
-			unsigned int *outlen, const char *fmt, ...);
+int eslib_string_sprintf(char *dst, const unsigned int size,
+			 unsigned int *outlen, const char *fmt, ...);
+int eslib_string_copy(char *dst, const char *src,
+		      const unsigned int size, unsigned int *outlen);
 
 /* =====================================
  * 		macros
  * =====================================
  */
+
+#define es_sprintf eslib_string_sprintf
+#define es_strcopy  eslib_string_copy
+
 
 /*
  * compare two timevals, returns (current - start > millisec)
