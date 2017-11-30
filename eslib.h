@@ -204,19 +204,21 @@ int eslib_file_bind(char *src, char *dest,unsigned long mntflags,unsigned long e
  * filename - path to file
  * buf      - buffer to copy file into
  * buf_size - size of buffer
- * out_len  - number of bytes written to buffer, may be 0 if file is empty.
+ * out_size - number of bytes written to buffer, may be 0 if file is empty.
+ *
  *
  * returns
  *  0 - ok
  * -1 - error
+ *    + EMEDIUMTYPE
+ *    		file is not a regular file.
  *    + EOVERFLOW
- *  	buffer was too small. out_len will be set to file size so caller can
- *  	adjust buffer size.
+ *  		buffer was too small. out_size will be set to file size so caller can
+ *  		adjust buffer size.
  *    + ENOTSUP
- *      buffer was too small and file does not support lseek(SEEK_END).
- *      caller should blindly increase the buffer size.
+ *      	buffer was too small and we were unable to get file size.
  */
-int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_len);
+int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_size);
 
 /* =====================================
  * 		process

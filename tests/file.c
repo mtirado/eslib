@@ -80,8 +80,9 @@ int test_path_check()
 	return 0;
 }
 
-int test_file_read_full()
+int test_file_read()
 {
+	char *full;
 	char buf[16];
 	size_t flen;
 
@@ -111,15 +112,27 @@ int test_file_read_full()
 		goto failure;
 	if (flen != 0)
 		goto failure;
+	if (eslib_file_read_full("./testfile", buf, sizeof(buf), &flen))
+		goto failure;
+	if (flen != 0)
+		goto failure;
 
 	/* procfs */
-	if (eslib_file_read_full("/proc/self/status", buf, 10, &flen) == 0) {
+	if (eslib_file_read_full("/proc/self/maps", buf, 10, &flen) == 0) {
 		goto failure;
 	}
-	if (errno != ENOTSUP) {
+	if (errno != EOVERFLOW) {
 		printf("*NOTE* procfs might have gained support for SEEK_END\n");
 		goto failure;
 	}
+	full = malloc(flen+1);
+	if (full == NULL)
+		goto failure;
+	if (eslib_file_read_full("/proc/self/maps", full, flen+1, &flen)) {
+		goto failure;
+	}
+	printf("%s\n", full);
+	free(full);
 	return 0;
 
 failure:
@@ -140,15 +153,15 @@ int main()
 	printf("eslib_file_path_check: passed\n");
 	printf("----------------------------------------------------------\n");
 
-	if (test_file_read_full()) {
+	if (test_file_read()) {
 		printf("----------------------------------------------------------\n");
-		printf("test_file_read_full: failed\n");
+		printf("test_file_read: failed\n");
 		printf("----------------------------------------------------------\n");
 		return -1;
 	}
 
 	printf("----------------------------------------------------------\n");
-	printf("test_file_read_full: passed\n");
+	printf("test_file_read: passed\n");
 	printf("----------------------------------------------------------\n");
 	return 0;
 

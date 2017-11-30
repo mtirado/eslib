@@ -520,18 +520,18 @@ int eslib_file_bind(char *src, char *dest,
 	return file_bind(src, dest, mntflags, propflags, esflags);
 }
 
-int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_len)
+int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_size)
 {
 	struct stat st;
 	size_t bytes_read = 0;
-	off_t off;
 	ssize_t r;
+	off_t seek;
 	int fd = -1;
 
 	errno = 0;
-	*out_len = 0;
+	*out_size = 0;
 
-	if (buf_size == 0 || out_len == NULL) {
+	if (buf_size < 1 || out_size == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -543,12 +543,11 @@ int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out
 	}
 	if (fstat(fd, &st)) {
 		printf("fstat: %s\n", strerror(errno));
-		errno = EINVAL;
 		goto err_close;
 	}
 	if (!S_ISREG(st.st_mode)) {
 		printf("file_read_full only supports regular files\n");
-		errno = EINVAL;
+		errno = EMEDIUMTYPE;
 		goto err_close;
 	}
 
@@ -567,18 +566,27 @@ int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out
 			break; /* eof */
 		}
 	}
+	/* read exactly enough bytes, check for eof */
 	if (bytes_read == buf_size) {
 		do {
 			char c;
 			r = read(fd, &c, 1);
 		} while (r == -1 && errno == EINTR);
 	}
-	if (r) {
+	else if (bytes_read > buf_size)
+		goto err_close;
+
+	if (r > 0) {
+		if (bytes_read + r <= bytes_read)
+			goto err_close;
+		bytes_read += r;
 		goto ret_file_len;
 	}
+	else if (r != 0)
+		goto err_close;
 
 	close(fd);
-	*out_len = bytes_read;
+	*out_size = bytes_read;
 	return 0;
 
 err_close:
@@ -587,15 +595,36 @@ err_close:
 
 ret_file_len:
 
-	/* this will fail on procfs at least */
-	off = lseek(fd, 0, SEEK_END);
-	close(fd);
-	if (off < 0) {
-		errno = ENOTSUP;
-		return -1;
+	seek = lseek(fd, 0, SEEK_END);
+	if (seek < 0) { /* fails on procfs at least */
+		while(1)
+		{
+			r = read(fd, buf, buf_size);
+			if (r > 0) {
+				if (bytes_read + r <= bytes_read)
+					goto problemo;
+				bytes_read += r;
+			}
+			else if (r < 0 && errno != EINTR) {
+				goto problemo;
+			}
+			else if (r == 0) {
+				break;
+			}
+		}
+		*out_size = bytes_read;
 	}
-	*out_len = off;
+	else if (seek > 0)
+		*out_size = seek;
+	else
+		goto problemo;
+
+	close(fd);
 	errno = EOVERFLOW;
 	return -1;
 
+problemo:
+	close(fd);
+	errno = ENOTSUP;
+	return -1;
 }

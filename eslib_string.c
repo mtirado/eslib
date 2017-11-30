@@ -37,6 +37,8 @@
 int eslib_string_is_sane(char *buf, const unsigned int len)
 {
 	unsigned int idx;
+	if (len == 0)
+		return -1;
 	for (idx = 0; idx < len; ++idx)
 	{
 		unsigned char c = buf[idx];
@@ -76,6 +78,10 @@ int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 	unsigned int delim_idx;
 	unsigned int delim_count = 0;
 
+	if (len == 0) {
+		errno = EINVAL;
+		return -1;
+	}
 	for (delim_idx = 0; delim_idx < DELIM_MAX; ++delim_idx)
 	{
 		if (delimiter[delim_idx] == '\0') {
@@ -241,7 +247,7 @@ int eslib_string_copy(char *dst,
 	size_t len;
 	int ret = 0;
 	errno = 0;
-	if (size >= INT_MAX || !dst || !src) {
+	if (size <= 1 || size >= INT_MAX || !dst || !src) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;

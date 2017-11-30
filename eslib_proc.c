@@ -307,24 +307,30 @@ off_t eslib_procfs_readfile(char *path, char **out)
 
 	while (size <= PROCFS_MAXREAD)
 	{
-		r = eslib_file_read_full(path, buf, size-1, &len);
+		r = eslib_file_read_full(path, buf, size - 1, &len);
 		if (r == 0) {
 			break;
 		}
 		else {
-			if (errno != ENOTSUP) {
+			char *re_buf = NULL;
+			if (errno != EOVERFLOW) {
 				printf("file_read_full(): %s\n", strerror(errno));
 				goto err_free;
 			}
+			if (size * 2 <= size || size * 2 > PROCFS_MAXREAD) {
+				errno = EOVERFLOW;
+				goto err_free;
+			}
 			size *= 2;
-			buf = realloc(buf, size);
-			if (buf == NULL) {
+			re_buf = realloc(buf, size);
+			if (re_buf == NULL) {
 				printf("realloc(): %s\n", strerror(errno));
 				goto err_free;
 			}
+			buf = re_buf;
 		}
 	}
-	if (size > PROCFS_MAXREAD || size < 4096 || len == 0)
+	if (len == 0)
 		goto err_free;
 	buf[len] = '\0';
 	*out = buf;
