@@ -195,7 +195,7 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 	int r;
 
 	errno = 0;
-	if (size >= INT_MAX) {
+	if (size >= INT_MAX || !dst || !fmt) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
@@ -241,7 +241,7 @@ int eslib_string_copy(char *dst,
 	size_t len;
 	int ret = 0;
 	errno = 0;
-	if (size >= INT_MAX) {
+	if (size >= INT_MAX || !dst || !src) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
