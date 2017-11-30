@@ -267,6 +267,12 @@ static int test_copy()
 		return -1;
 	if (dst[0] != '\0')
 		return -1;
+	if (es_strcopy(dst, good_msg, INT_MAX, NULL) != -1)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (dst[0] != '\0')
+		return -1;
 	return 0;
 }
 

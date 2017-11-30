@@ -196,6 +196,7 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 
 	errno = 0;
 	if (size >= INT_MAX) {
+		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
 	}
@@ -230,7 +231,7 @@ failed:
 
 /*
  * copying len 0 or >= size is an error, but copy truncated string anyway.
- * size must be < INT_MAX
+ * if size >= INT_MAX string is terminated at beginning
  */
 int eslib_string_copy(char *dst,
 		      const char *src,
@@ -241,6 +242,7 @@ int eslib_string_copy(char *dst,
 	int ret = 0;
 	errno = 0;
 	if (size >= INT_MAX) {
+		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
 	}
