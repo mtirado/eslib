@@ -201,12 +201,15 @@ static int test_sprintf()
 		printf("didn't detect massive string size\n");
 		return -1;
 	}
+	if (dst[0] != 'A')
+		return -1;
+
 
 	if (es_sprintf(dst, sizeof(dst), &len, "%s", "") != -1) {
 		printf("bad sprintf 2 didn't fail\n");
 		return -1;
 	}
-	if (errno != ECANCELED) {
+	if (errno != ECANCELED || dst[0] != '\0') {
 		printf("didn't detect 0 len write\n");
 		return -1;
 	}
@@ -256,11 +259,13 @@ static int test_copy()
 		return -1;
 	if (es_strcopy(dst, bad_msg, sizeof(dst), &len) == 0)
 		return -1;
-	if (errno != EOVERFLOW)
+	if (errno != EOVERFLOW || dst[0] != 'B')
 		return -1;
 	if (es_strcopy(dst, "", sizeof(dst), &len) == 0)
 		return -1;
 	if (errno != ECANCELED || len != 0)
+		return -1;
+	if (dst[0] != '\0')
 		return -1;
 	return 0;
 }
