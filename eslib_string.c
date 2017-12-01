@@ -182,11 +182,11 @@ int eslib_string_to_s32(char *str, int32_t *out)
 	}
 
 	/* catch 64-bit long->int overflow */
-	if (ret > INT_MAX || ret < INT_MIN) {
+	if (ret > INT32_MAX || ret < INT32_MIN) {
 		errno = EOVERFLOW;
 		return -1;
 	}
-	*out = (int)ret;
+	*out = (int32_t)ret;
 	return 0;
 }
 
@@ -214,11 +214,11 @@ int eslib_string_to_u32(char *str, uint32_t *out)
 	}
 
 	/* catch 64-bit long->int overflow */
-	if (ret > UINT_MAX) {
+	if (ret > UINT32_MAX) {
 		errno = EOVERFLOW;
 		return -1;
 	}
-	*out = (int)ret;
+	*out = (uint32_t)ret;
 	return 0;
 }
 
