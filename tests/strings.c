@@ -146,61 +146,66 @@ int test_type_conv()
 	unsigned int uval;
 	int val;
 
-	if (eslib_string_to_u32(good, &uval))
+	if (eslib_string_to_u32(good, &uval, 10))
 		return -1;
 	if (uval != 9999)
 		return -1;
-	if (eslib_string_to_s32(good, &val))
+	if (eslib_string_to_s32(good, &val, 10))
 		return -1;
 	if (val != 9999)
 		return -1;
-	if (eslib_string_to_s32(good2, &val))
+	if (eslib_string_to_s32(good2, &val, 10))
 		return -1;
 	if (val != -12)
 		return -1;
-	if (eslib_string_to_u32(good3, &uval))
+	if (eslib_string_to_u32(good3, &uval, 10))
 		return -1;
 	if (uval != 1234567)
 		return -1;
-	if (eslib_string_to_s32(good3, &val))
+	if (eslib_string_to_s32(good3, &val, 10))
 		return -1;
 	if (val != 1234567)
 		return -1;
-	if (eslib_string_to_u32("-12", &uval) == 0)
+	if (eslib_string_to_u32("-12", &uval, 10) == 0)
 		return -1;
-	if (errno != EINVAL)
+	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(bad, &val) == 0)
+	if (eslib_string_to_s32(bad, &val, 10) == 0)
 		return -1;
-	if (errno != EINVAL)
+	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(bad2, &val) == 0)
+	if (eslib_string_to_s32(bad2, &val, 10) == 0)
 		return -1;
-	if (errno != EINVAL)
+	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(ugly, &val) == 0)
+	if (eslib_string_to_s32(ugly, &val, 10) == 0)
 		return -1;
-	if (errno != EINVAL)
+	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(ugly2, &val) == 0)
+	if (eslib_string_to_s32(ugly2, &val, 10) == 0)
 		return -1;
-	if (errno != EINVAL)
+	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_u32(nasty, &uval) == 0)
-		return -1;
-	if (errno != EOVERFLOW)
-		return -1;
-	if (eslib_string_to_u32(nasty2, &uval) == 0)
-		return -1;
-	if (errno != EINVAL)
-		return -1;
-	if (eslib_string_to_s32(nasty, &val) == 0)
+	if (eslib_string_to_u32(nasty, &uval, 10) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
-	if (eslib_string_to_s32(nasty2, &val) == 0)
+	if (eslib_string_to_u32(nasty2, &uval, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s32(nasty, &val, 10) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
+		return -1;
+	if (eslib_string_to_s32(nasty2, &val, 10) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+
+	if (eslib_string_to_s32(nasty2, &val, 16) == 0)
+		return -1;
+	if (errno != EINVAL)
 		return -1;
 	return 0;
 }

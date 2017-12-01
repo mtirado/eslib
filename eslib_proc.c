@@ -122,7 +122,7 @@ int eslib_proc_alloc_fdlist(pid_t pid, int32_t **outlist)
 					continue;
 			}
 		}
-		if (eslib_string_to_s32(dent->d_name, &fdnum) || fdnum < 0)
+		if (eslib_string_to_s32(dent->d_name, &fdnum, 10) || fdnum < 0)
 			goto failed;
 		fdlist[count] = fdnum;
 		if (++count >= first_count)

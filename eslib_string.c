@@ -158,17 +158,20 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 	return &buf[token_start];
 }
 
-int eslib_string_to_s32(char *str, int32_t *out)
+int eslib_string_to_s32(char *str, int32_t *out, int base)
 {
 	long ret;
 	char *err = NULL;
 	char c = str[0];
 
 	errno = 0;
-
+	if (base != 10) { /* TODO, hex, oct, binary, etc. */
+		errno = EINVAL;
+		return -1;
+	}
 	/* don't allow unexpected leading chars */
 	if ((c < '0' || c > '9') && c != '-' && c != '+') {
-		errno = EINVAL;
+		errno = EIO;
 		return -1;
 	}
 
@@ -177,7 +180,7 @@ int eslib_string_to_s32(char *str, int32_t *out)
 		if (errno == ERANGE)
 			errno = EOVERFLOW;
 		else
-			errno = EINVAL;
+			errno = EIO;
 		return -1;
 	}
 
@@ -190,17 +193,20 @@ int eslib_string_to_s32(char *str, int32_t *out)
 	return 0;
 }
 
-int eslib_string_to_u32(char *str, uint32_t *out)
+int eslib_string_to_u32(char *str, uint32_t *out, int base)
 {
 	unsigned long ret;
 	char *err = NULL;
 	char c = str[0];
 
 	errno = 0;
-
+	if (base != 10) { /* TODO, hex, oct, binary, etc. */
+		errno = EINVAL;
+		return -1;
+	}
 	/* don't allow unexpected leading chars */
 	if ((c < '0' || c > '9') && c != '+') {
-		errno = EINVAL;
+		errno = EIO;
 		return -1;
 	}
 
@@ -209,7 +215,7 @@ int eslib_string_to_u32(char *str, uint32_t *out)
 		if (errno == ERANGE)
 			errno = EOVERFLOW;
 		else
-			errno = EINVAL;
+			errno = EIO;
 		return -1;
 	}
 
