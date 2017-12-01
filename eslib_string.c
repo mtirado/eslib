@@ -258,6 +258,7 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 		ret = -1;
 		r = size - 1;
 	}
+	dst[r] = '\0';
 
 	if (outlen)
 		*outlen = r;
