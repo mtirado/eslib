@@ -60,16 +60,15 @@ int eslib_proc_numfds(pid_t pid)
 
 }
 
-int eslib_proc_alloc_fdlist(pid_t pid, int **outlist)
+int eslib_proc_alloc_fdlist(pid_t pid, int32_t **outlist)
 {
 	char path[256];
 	struct dirent *dent;
-	unsigned int fdnum;
+	int32_t fdnum = -1;
 	int first_count;
 	int count;
 	DIR *dir;
-	char *err = NULL;
-	int *fdlist = NULL;
+	int32_t *fdlist = NULL;
 
 	errno = 0;
 	if (!outlist)
@@ -102,7 +101,7 @@ int eslib_proc_alloc_fdlist(pid_t pid, int **outlist)
 		return -1;
 	}
 
-	fdlist = malloc(sizeof(int) * count);
+	fdlist = malloc(sizeof(int32_t) * count);
 	if (!fdlist)
 		goto failed;
 
@@ -123,15 +122,10 @@ int eslib_proc_alloc_fdlist(pid_t pid, int **outlist)
 					continue;
 			}
 		}
-		errno = 0;
-		fdnum = strtol(dent->d_name, &err, 10);
-		if (err == NULL || *err || errno) {
-			printf("error reading fdnum: %s\n", dent->d_name);
+		if (eslib_string_to_s32(dent->d_name, &fdnum) || fdnum < 0)
 			goto failed;
-		}
 		fdlist[count] = fdnum;
-		++count;
-		if (count >= first_count)
+		if (++count >= first_count)
 			break; /* don't write oob if new files appeared */
 		/* . and .. dir entries are counted on first pass so 2 new
 		 * files can be tolerated, but note this may need modification

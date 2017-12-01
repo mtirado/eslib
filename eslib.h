@@ -243,7 +243,7 @@ int eslib_proc_numfds(pid_t pid);
  *   0  - no open fd's
  *  -1	- error
  */
-int eslib_proc_alloc_fdlist(pid_t pid, int **outlist);
+int eslib_proc_alloc_fdlist(pid_t pid, int32_t **outlist);
 
 
 /*
