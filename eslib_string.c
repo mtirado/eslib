@@ -25,6 +25,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "eslib.h"
+
 #define STR_MAX (UINT_MAX - 1)
 #define DELIM_MAX 255
 
@@ -156,7 +158,7 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 	return &buf[token_start];
 }
 
-int eslib_string_to_int(char *str, int *out)
+int eslib_string_to_s32(char *str, int32_t *out)
 {
 	long ret;
 	char *err = NULL;
@@ -181,6 +183,38 @@ int eslib_string_to_int(char *str, int *out)
 
 	/* catch 64-bit long->int overflow */
 	if (ret > INT_MAX || ret < INT_MIN) {
+		errno = EOVERFLOW;
+		return -1;
+	}
+	*out = (int)ret;
+	return 0;
+}
+
+int eslib_string_to_u32(char *str, uint32_t *out)
+{
+	unsigned long ret;
+	char *err = NULL;
+	char c = str[0];
+
+	errno = 0;
+
+	/* don't allow unexpected leading chars */
+	if ((c < '0' || c > '9') && c != '+') {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = strtoul(str, &err, 10);
+	if (err == NULL || *err || errno) {
+		if (errno == ERANGE)
+			errno = EOVERFLOW;
+		else
+			errno = EINVAL;
+		return -1;
+	}
+
+	/* catch 64-bit long->int overflow */
+	if (ret > UINT_MAX) {
 		errno = EOVERFLOW;
 		return -1;
 	}

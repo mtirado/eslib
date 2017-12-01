@@ -143,41 +143,62 @@ int test_type_conv()
 	char ugly2[]  = " 12345";
 	char nasty[]  = "1000000000000";
 	char nasty2[] = "-1000000000000";
+	unsigned int uval;
 	int val;
 
-	if (eslib_string_to_int(good, &val))
+	if (eslib_string_to_u32(good, &uval))
+		return -1;
+	if (uval != 9999)
+		return -1;
+	if (eslib_string_to_s32(good, &val))
 		return -1;
 	if (val != 9999)
 		return -1;
-	if (eslib_string_to_int(good2, &val))
+	if (eslib_string_to_s32(good2, &val))
 		return -1;
 	if (val != -12)
 		return -1;
-	if (eslib_string_to_int(good3, &val))
+	if (eslib_string_to_u32(good3, &uval))
+		return -1;
+	if (uval != 1234567)
+		return -1;
+	if (eslib_string_to_s32(good3, &val))
 		return -1;
 	if (val != 1234567)
 		return -1;
-	if (eslib_string_to_int(bad, &val) == 0)
+	if (eslib_string_to_u32("-12", &uval) == 0)
 		return -1;
 	if (errno != EINVAL)
 		return -1;
-	if (eslib_string_to_int(bad2, &val) == 0)
+	if (eslib_string_to_s32(bad, &val) == 0)
 		return -1;
 	if (errno != EINVAL)
 		return -1;
-	if (eslib_string_to_int(ugly, &val) == 0)
+	if (eslib_string_to_s32(bad2, &val) == 0)
 		return -1;
 	if (errno != EINVAL)
 		return -1;
-	if (eslib_string_to_int(ugly2, &val) == 0)
+	if (eslib_string_to_s32(ugly, &val) == 0)
 		return -1;
 	if (errno != EINVAL)
 		return -1;
-	if (eslib_string_to_int(nasty, &val) == 0)
+	if (eslib_string_to_s32(ugly2, &val) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_u32(nasty, &uval) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
-	if (eslib_string_to_int(nasty2, &val) == 0)
+	if (eslib_string_to_u32(nasty2, &uval) == 0)
+		return -1;
+	if (errno != EINVAL)
+		return -1;
+	if (eslib_string_to_s32(nasty, &val) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+	if (eslib_string_to_s32(nasty2, &val) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;

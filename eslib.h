@@ -17,6 +17,7 @@
 #define ESLIB_H__
 
 #include <sys/types.h>
+#include <stdint.h>
 #ifndef MAX_SYSTEMPATH
 	#define MAX_SYSTEMPATH 2048
 #endif
@@ -312,7 +313,8 @@ unsigned int eslib_string_linelen(char *buf, unsigned int size);
 int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter);
 char *eslib_string_toke(char *buf, unsigned int idx,
 			const unsigned int len, unsigned int *advance);
-int eslib_string_to_int(char *str, int *out);
+int eslib_string_to_s32(char *str, int32_t *out);
+int eslib_string_to_u32(char *str, uint32_t *out);
 int eslib_string_sprintf(char *dst, const unsigned int size,
 			 unsigned int *outlen, const char *fmt, ...);
 int eslib_string_copy(char *dst, const char *src,
