@@ -18,10 +18,10 @@ all:					\
 
 $(TEST_NETLINK):
 		@echo ""
-		$(CC) $(CFLAGS) -o $@ ./tests/netlink.c ./eslib_rtnetlink.c
+		$(CC) $(CFLAGS) -o $@ ./tests/netlink.c ./eslib_rtnetlink.c ./eslib_string.c
 $(TEST_DEVLOG):
 		@echo ""
-		$(CC) $(CFLAGS) -o $@ ./tests/devlog.c ./eslib_log.c ./eslib_proc.c
+		$(CC) $(CFLAGS) -o $@ ./tests/devlog.c ./eslib_log.c ./eslib_proc.c ./eslib_string.c
 $(TEST_PROC):
 		@echo ""
 		$(CC) $(CFLAGS) -o $@ ./tests/proc.c ./eslib_file.c ./eslib_proc.c ./eslib_string.c

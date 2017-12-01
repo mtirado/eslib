@@ -538,8 +538,8 @@ short syscall_getnum(char *defstring)
 	if (!defstring || count > MAX_SYSCALLS)
 		return -1;
 
-	strncpy(buf, defstring, MAX_SYSCALL_NAME-1);
-	buf[MAX_SYSCALL_NAME-1] = '\0';
+	if (es_strcopy(buf, defstring, MAX_SYSCALL_NAME, NULL))
+		return -1;
 	for (i = 0; i < count; ++i)
 	{
 		if (strncmp(buf, sc_table[i].name, MAX_SYSCALL_NAME) == 0)
@@ -588,8 +588,8 @@ int cap_getnum(char *defstring)
 	if (!defstring || count > NUM_OF_CAPS)
 		return -1;
 
-	strncpy(buf, defstring, MAX_CAP_NAME-1);
-	buf[MAX_CAP_NAME-1] = '\0';
+	if (es_strcopy(buf, defstring, MAX_CAP_NAME, NULL))
+		return -1;
 	for (i = 0; i < count; ++i)
 	{
 		if (strncmp(buf, cap_table[i].name, MAX_CAP_NAME) == 0)
@@ -1201,7 +1201,8 @@ int eslib_fortify_prepare(char *chroot_path, int mountproc)
 		if (mountproc > 0) /* use -1 for +w */
 			remountflags |= MS_RDONLY;
 
-		snprintf(path, sizeof(path), "%s/proc", chroot_path);
+		if (es_sprintf(path, sizeof(path), NULL, "%s/proc", chroot_path))
+			return -1;
 		if (eslib_file_mkdirpath(path, 0755))
 			return -1;
 
@@ -1223,7 +1224,8 @@ int eslib_fortify_install_file(char *chroot_path, char *file,
 	char dest[MAX_SYSTEMPATH];
 	if (eslib_file_path_check(chroot_path) || eslib_file_path_check(file))
 		return -1;
-	snprintf(dest, sizeof(dest), "%s%s", chroot_path, file);
+	if (es_sprintf(dest, sizeof(dest), NULL, "%s%s", chroot_path, file))
+		return -1;
 	if (eslib_file_bind(file, dest, mntflags, esflags))
 		return -1;
 	return 0;

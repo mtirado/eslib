@@ -407,8 +407,8 @@ int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
 	}
 	memset(inbuf,  0, sizeof(inbuf));
 	memset(outbuf, 0, sizeof(outbuf));
-	strncpy(inbuf, hwaddr, MAX_HWADDR-1);
-	inbuf[MAX_HWADDR-1] = '\0';
+	if (es_strcopy(inbuf, hwaddr, MAX_HWADDR, NULL))
+		return -1;
 
 	memset(&req,   0, sizeof(req));
 	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
@@ -556,8 +556,10 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 		printf("veth interface name too long\n");
 		return -1;
 	}
-	snprintf(name1, sizeof(name1), "%s1", name);
-	snprintf(name2, sizeof(name2), "%s2", name);
+	if (es_sprintf(name1, sizeof(name1), NULL, "%s1", name))
+		return -1;
+	if (es_sprintf(name2, sizeof(name2), NULL, "%s2", name))
+		return -1;
 
 	/* set interface 1 name */
 	if (nlmsg_addattr(&req->hdr, sizeof(*req), IFLA_IFNAME, name1, namelen) == NULL)
@@ -838,8 +840,10 @@ int eslib_rtnetlink_linksetname(char *name, char *newname)
 		return -1;
 	}
 	memset(&req, 0, sizeof(req));
-	strncpy(req.ifr_name, name, IFNAMSIZ);
-	strncpy(req.ifr_newname, newname, IFNAMSIZ);
+	if (es_strcopy(req.ifr_name, name, IFNAMSIZ, NULL))
+		return -1;
+	if (es_strcopy(req.ifr_newname, newname, IFNAMSIZ, NULL))
+		return -1;
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd == -1) {
 		fd = socket(AF_PACKET, SOCK_DGRAM, 0);

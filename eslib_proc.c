@@ -39,7 +39,8 @@ int eslib_proc_numfds(pid_t pid)
 
 	if (pid <= 0)
 		return -1;
-	snprintf(path, sizeof(path), "/proc/%d/fd", pid);
+	if (es_sprintf(path, sizeof(path), NULL, "/proc/%d/fd", pid))
+		return -1;
 	dir = opendir(path);
 	if (dir == NULL) {
 		printf("error opening %s: %s\n", path, strerror(errno));
@@ -76,7 +77,8 @@ int eslib_proc_alloc_fdlist(pid_t pid, int **outlist)
 	if (pid <= 0)
 		return -1;
 
-	snprintf(path, sizeof(path), "/proc/%d/fd", pid);
+	if (es_sprintf(path, sizeof(path), NULL, "/proc/%d/fd", pid))
+		return -1;
 	dir = opendir(path);
 	if (dir == NULL) {
 		printf("error opening %s: %s\n", path, strerror(errno));
@@ -212,12 +214,13 @@ int eslib_proc_setenv(char *name, char *val)
 			return -1;
 	}
 
-	len = strlen(name) + 1 + strlen(val) + 1; /*name=val\0*/
-	str = malloc(len); /* will leak if set twice, TODO use realloc? */
+	len = strlen(name) + 1 + strlen(val); /*name=val*/
+	str = malloc(len + 1); /* FIXME will leak if var is set twice */
 	if (str == NULL)
 		return -1;
 
-	snprintf(str, len, "%s=%s", name, val);
+	if (es_sprintf(str, len + 1, NULL, "%s=%s", name, val))
+		return -1;
 	if (idx != -1) {
 		/* replace existing */
 		environ[idx] = str;
@@ -265,7 +268,8 @@ char *eslib_proc_getname()
 		char buf[64];
 		int fd;
 		/* parse /proc/pid/cmdline */
-		snprintf(buf, sizeof(buf), "/proc/%d/cmdline", getpid());
+		if (es_sprintf(buf, sizeof(buf), NULL, "/proc/%d/cmdline", getpid()))
+			goto err;
 		fd = open(buf, O_CLOEXEC|O_RDONLY|O_NOCTTY);
 		if (fd == -1) {
 			printf("could not open %s\n", buf);
@@ -287,7 +291,7 @@ char *eslib_proc_getname()
 	return name;
 err:
 	once = 0;
-	snprintf(name, ESLIB_MAX_PROCNAME, "no-procname");
+	es_sprintf(name, ESLIB_MAX_PROCNAME, NULL, "no-procname");
 	return name;
 }
 

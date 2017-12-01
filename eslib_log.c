@@ -39,10 +39,10 @@ static int logmsg(char *name, char *msg, int lvl)
 	int devlog;
 
 	if (name == NULL)
-		snprintf(namebuf, sizeof(namebuf),
+		es_sprintf(namebuf, sizeof(namebuf), NULL,
 				"%s [%d]", eslib_proc_getname(), getpid());
 	else
-		snprintf(namebuf, sizeof(namebuf),
+		es_sprintf(namebuf, sizeof(namebuf), NULL,
 				"%s [%d]", name, getpid());
 	if (msg == NULL)
 		msg = namebuf;
@@ -51,13 +51,13 @@ static int logmsg(char *name, char *msg, int lvl)
 	{
 	default:
 	case ESLOG_MSG:
-		snprintf(msgbuf, sizeof(msgbuf), "%s info: %s", namebuf, msg);
+		es_sprintf(msgbuf, sizeof(msgbuf), NULL, "%s info: %s", namebuf, msg);
 		break;
 	case ESLOG_ERR:
-		snprintf(msgbuf, sizeof(msgbuf), "%s error: %s", namebuf, msg);
+		es_sprintf(msgbuf, sizeof(msgbuf), NULL, "%s error: %s", namebuf, msg);
 		break;
 	case ESLOG_CRIT:
-		snprintf(msgbuf, sizeof(msgbuf), "%s critical: %s", namebuf, msg);
+		es_sprintf(msgbuf, sizeof(msgbuf), NULL, "%s critical: %s", namebuf, msg);
 		break;
 	}
 
@@ -73,7 +73,8 @@ static int logmsg(char *name, char *msg, int lvl)
 	/* send to /dev/log */
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, "/dev/log", sizeof(addr.sun_path)-1);
+	if (es_strcopy(addr.sun_path, "/dev/log", sizeof(addr.sun_path), NULL))
+		return -1;
 
 	devlog = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if (devlog == -1) {
