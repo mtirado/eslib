@@ -1181,16 +1181,32 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 	return 0;
 }
 
-int eslib_fortify_prepare(char *chroot_path, int mountproc)
+int eslib_fortify_prepare(char *chroot_path, int mountproc, unsigned int fortflags)
 {
 	if (eslib_file_path_check(chroot_path))
 		return -1;
 	if (eslib_file_mkdirpath(chroot_path, 0755))
 		return -1;
-	if (unshare(CLONE_NEWNS | CLONE_NEWPID)) {
-		printf("unshare: %s\n", strerror(errno));
-		return -1;
+
+	if (!(fortflags & ESLIB_FORTIFY_SHARE_NET)) {
+		if (unshare(CLONE_NEWNET)) {
+			printf("unshare(CLONE_NEWNET): %s\n", strerror(errno));
+			return -1;
+		}
 	}
+	if (!(fortflags & ESLIB_FORTIFY_SHARE_PROC)) {
+		if (unshare(CLONE_NEWPID)) {
+			printf("unshare(CLONE_NEWPID): %s\n", strerror(errno));
+			return -1;
+		}
+	}
+	if (!(fortflags & ESLIB_FORTIFY_SHARE_MOUNT)) {
+		if (unshare(CLONE_NEWNS)) {
+			printf("unshare(CLONE_NEWNS): %s\n", strerror(errno));
+			return -1;
+		}
+	}
+
 	if (mountproc)
 	{
 		char path[MAX_SYSTEMPATH];
@@ -1253,13 +1269,6 @@ int eslib_fortify(char *chroot_path,
 	ignore_cap_blacklist = fortflags & ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST;
 	remountflags |= MS_RDONLY;
 	remountflags |= MS_NOEXEC;
-
-	if (!(fortflags & ESLIB_FORTIFY_SHARE_NET)) {
-		if (unshare(CLONE_NEWNET)) {
-			printf("unshare(CLONE_NEWNET): %s\n", strerror(errno));
-			return -1;
-		}
-	}
 
 	if (mount(chroot_path, chroot_path, "bind", MS_BIND, NULL)) {
 		printf("could not bind mount: %s\n", strerror(errno));

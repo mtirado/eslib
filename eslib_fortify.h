@@ -46,8 +46,10 @@
 #endif
 
 /* fortify flags */
-#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST 1 /* dangerously ignore the cap blacklist  */
-#define ESLIB_FORTIFY_SHARE_NET	  	   2 /* share network namespaces              */
+#define ESLIB_FORTIFY_IGNORE_CAP_BLACKLIST (1 << 0) /* ignore the cap blacklist */
+#define ESLIB_FORTIFY_SHARE_NET            (1 << 1) /* share network namespaces */
+#define ESLIB_FORTIFY_SHARE_PROC           (1 << 2) /* share process id namespaces */
+#define ESLIB_FORTIFY_SHARE_MOUNT          (1 << 3) /* share mount namespaces */
 
 struct syscall_list {
 	short list[MAX_SYSCALLS+1]; /* terminated with -1 */
@@ -113,7 +115,7 @@ int  seccomp_program_install(struct seccomp_program *filter);
 /*
  * unshares mount/pid namespaces, create chroot dir and mount proc (use -1 for +w)
  */
-int eslib_fortify_prepare(char *chroot_path, int mountproc);
+int eslib_fortify_prepare(char *chroot_path, int mountproc, unsigned int fortflags);
 
 /* bind file in chroot after calling prepare
  *

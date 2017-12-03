@@ -132,7 +132,7 @@ void exec_prntout()
 		goto fail;
 	}
 	/* build fs */
-	if (eslib_fortify_prepare(FORTDIR, 1))
+	if (eslib_fortify_prepare(FORTDIR, 1, 0))
 		goto fail;
 	if (eslib_fortify_install_file(FORTDIR, TESTPROG, mflags, esflags))
 		goto fail;
