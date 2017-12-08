@@ -268,6 +268,18 @@ static int test_sprintf()
 		return -1;
 	}
 
+#ifdef COMPILE_TEST
+	if (es_sprintf(dst, sizeof(dst), &len, "%d %f", 1.0, 10)) {
+		return -1;
+	}
+#else
+	if (es_sprintf(dst, sizeof(dst), &len, "%d %5.3f\n", 10, 0.10f)) {
+		printf("good sprintf3 failed\n");
+		return -1;
+	}
+	/*printf(dst);*/
+#endif
+
 
 	return 0;
 }

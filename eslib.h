@@ -316,7 +316,8 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 int eslib_string_to_s32(char *str, int32_t *out, int base);
 int eslib_string_to_u32(char *str, uint32_t *out, int base);
 int eslib_string_sprintf(char *dst, const unsigned int size,
-			 unsigned int *outlen, const char *fmt, ...);
+			unsigned int *outlen, const char *fmt, ...)
+			__attribute__ ((format (printf, 4, 5)));
 int eslib_string_copy(char *dst, const char *src,
 		      const unsigned int count, unsigned int *outlen);
 
