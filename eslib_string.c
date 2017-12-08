@@ -27,7 +27,7 @@
 
 #include "eslib.h"
 
-#define STR_MAX (UINT_MAX - 1)
+#define STR_MAX (INT_MAX - 1)
 #define DELIM_MAX 255
 
 #define safe_char(chr) (			\
@@ -229,7 +229,7 @@ int eslib_string_to_u32(char *str, uint32_t *out, int base)
 }
 
 /* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
- * size must be < INT_MAX
+ * size must be < STR_MAX
  * printing 0 chars or >= size is an error, but copy truncated string anyway
  * dst buffer gets fully zero'd if error is encountered in vsnprintf call
  */
@@ -241,7 +241,7 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 	int r;
 
 	errno = 0;
-	if (size >= INT_MAX || !dst || !fmt) {
+	if (size >= STR_MAX || !dst || !fmt) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
@@ -277,28 +277,28 @@ failed:
 }
 
 /*
- * copying len 0 or >= size is an error, but copy truncated string anyway.
- * if size >= INT_MAX string is terminated at beginning
+ * copying len 0 is error. so is len >= dst_size, but copy truncated string anyway.
+ * if dst_size >= STR_MAX string is terminated at beginning
  */
 int eslib_string_copy(char *dst,
 		      const char *src,
-		      const unsigned int size,
+		      const unsigned int dst_size,
 		      unsigned int *outlen)
 {
 	size_t len;
 	int ret = 0;
 	errno = 0;
-	if (size <= 1 || size >= INT_MAX || !dst || !src) {
+	if (dst_size == 0 || dst_size >= STR_MAX || !dst || !src) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
 	}
 
-	len = strnlen(src, size);
-	if (len >= size) {
+	len = strnlen(src, dst_size);
+	if (len >= dst_size) {
 		ret = -1;
 		errno = EOVERFLOW;
-		len = size - 1;
+		len = dst_size - 1;
 	}
 	else if (len == 0) {
 		ret = -1;

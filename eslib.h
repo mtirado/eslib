@@ -318,7 +318,7 @@ int eslib_string_to_u32(char *str, uint32_t *out, int base);
 int eslib_string_sprintf(char *dst, const unsigned int size,
 			 unsigned int *outlen, const char *fmt, ...);
 int eslib_string_copy(char *dst, const char *src,
-		      const unsigned int size, unsigned int *outlen);
+		      const unsigned int count, unsigned int *outlen);
 
 /* =====================================
  * 		macros
