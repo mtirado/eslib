@@ -26,7 +26,7 @@
 
 #define MAX_SYSCALL_NAME 64
 #define MAX_CAP_NAME 64
-#define NUM_OF_CAPS 64
+#define NUM_OF_CAPS (CAP_LAST_CAP+1)
 /* SECCOMP_RET_DATA values,
  * this is only reliable if process only has one seccomp filter
  * and cannot install additional filters, use SECCOPT_BLOCKNEW.
