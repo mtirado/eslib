@@ -112,7 +112,10 @@ int eslib_string_tokenize(char *buf, const unsigned int len, char *delimiter)
 }
 
 /* advance returns how many characters to increment idx
- * an idx value of zero would indicate an error.
+ * a value of zero would indicate an error.
+ * after returning on the last toke, advance + idx may be out of bounds.
+ * the next call will return NULL. advance is for convenience while not
+ * relying on an internal state, not for calculating token lengths
  */
 char *eslib_string_toke(char *buf, unsigned int idx,
 		const unsigned int len, unsigned int *advance)
