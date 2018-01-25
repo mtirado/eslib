@@ -13,7 +13,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * note: len should never be greater than bufsize - 1
+ * obvious assumptions:
+ *
+ *       len <= size - 1
+ *
+ * not so obvious:
+ *
+ * FIXME this won't work on systems where long < 32 or long long < 64
+ *       since our use of strto(u)l and strto(u)ll currently make these assumptions.
  */
 
 #define _GNU_SOURCE
@@ -163,7 +170,7 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 
 int eslib_string_to_s32(char *str, int32_t *out, int base)
 {
-	long ret;
+	int32_t ret;
 	char *err = NULL;
 	char c = str[0];
 
@@ -187,18 +194,13 @@ int eslib_string_to_s32(char *str, int32_t *out, int base)
 		return -1;
 	}
 
-	/* catch 64-bit long->int overflow */
-	if (ret > INT32_MAX || ret < INT32_MIN) {
-		errno = EOVERFLOW;
-		return -1;
-	}
-	*out = (int32_t)ret;
+	*out = ret;
 	return 0;
 }
 
 int eslib_string_to_u32(char *str, uint32_t *out, int base)
 {
-	unsigned long ret;
+	uint32_t ret;
 	char *err = NULL;
 	char c = str[0];
 
@@ -222,15 +224,69 @@ int eslib_string_to_u32(char *str, uint32_t *out, int base)
 		return -1;
 	}
 
-	/* catch 64-bit long->int overflow */
-	if (ret > UINT32_MAX) {
-		errno = EOVERFLOW;
-		return -1;
-	}
-	*out = (uint32_t)ret;
+	*out = ret;
 	return 0;
 }
 
+int eslib_string_to_s64(char *str, int64_t *out, int base)
+{
+	int64_t ret;
+	char *err = NULL;
+	char c = str[0];
+
+	errno = 0;
+	if (base != 10) { /* TODO, hex, oct, binary, etc. */
+		errno = EINVAL;
+		return -1;
+	}
+	/* don't allow unexpected leading chars */
+	if ((c < '0' || c > '9') && c != '-' && c != '+') {
+		errno = EIO;
+		return -1;
+	}
+
+	ret = strtoll(str, &err, 10);
+	if (err == NULL || *err || errno) {
+		if (errno == ERANGE)
+			errno = EOVERFLOW;
+		else
+			errno = EIO;
+		return -1;
+	}
+
+	*out = ret;
+	return 0;
+}
+
+int eslib_string_to_u64(char *str, uint64_t *out, int base)
+{
+	uint64_t ret;
+	char *err = NULL;
+	char c = str[0];
+
+	errno = 0;
+	if (base != 10) { /* TODO, hex, oct, binary, etc. */
+		errno = EINVAL;
+		return -1;
+	}
+	/* don't allow unexpected leading chars */
+	if ((c < '0' || c > '9') && c != '+') {
+		errno = EIO;
+		return -1;
+	}
+
+	ret = strtoull(str, &err, 10);
+	if (err == NULL || *err || errno) {
+		if (errno == ERANGE)
+			errno = EOVERFLOW;
+		else
+			errno = EIO;
+		return -1;
+	}
+
+	*out = ret;
+	return 0;
+}
 /* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
  * size must be < STR_MAX
  * printing 0 chars or >= size is an error, but copy truncated string anyway

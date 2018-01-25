@@ -141,69 +141,147 @@ int test_type_conv()
 	char bad2[]   = "789abc";
 	char ugly[]   = "54321 ";
 	char ugly2[]  = " 12345";
-	char nasty[]  = "1000000000000";
-	char nasty2[] = "-1000000000000";
-	unsigned int uval;
-	int val;
+	char nasty_u32[]  = "10000000000";
+	char nasty_s32[]  = "-10000000000";
+	char nasty_u64[]  = "100000000000000000000";
+	char nasty_s64[]  = "-10000000000000000000";
+	uint32_t u32val;
+	int32_t  s32val;
+	uint64_t u64val;
+	int64_t  s64val;
 
-	if (eslib_string_to_u32(good, &uval, 10))
+	if (eslib_string_to_u32(good, &u32val, 10))
 		return -1;
-	if (uval != 9999)
+	if (u32val != 9999)
 		return -1;
-	if (eslib_string_to_s32(good, &val, 10))
+	if (eslib_string_to_s32(good, &s32val, 10))
 		return -1;
-	if (val != 9999)
+	if (s32val != 9999)
 		return -1;
-	if (eslib_string_to_s32(good2, &val, 10))
+	if (eslib_string_to_s32(good2, &s32val, 10))
 		return -1;
-	if (val != -12)
+	if (s32val != -12)
 		return -1;
-	if (eslib_string_to_u32(good3, &uval, 10))
+	if (eslib_string_to_u32(good3, &u32val, 10))
 		return -1;
-	if (uval != 1234567)
+	if (u32val != 1234567)
 		return -1;
-	if (eslib_string_to_s32(good3, &val, 10))
+	if (eslib_string_to_s32(good3, &s32val, 10))
 		return -1;
-	if (val != 1234567)
+	if (s32val != 1234567)
 		return -1;
-	if (eslib_string_to_u32("-12", &uval, 10) == 0)
-		return -1;
-	if (errno != EIO)
-		return -1;
-	if (eslib_string_to_s32(bad, &val, 10) == 0)
+	if (eslib_string_to_u32("-12", &u32val, 10) == 0)
 		return -1;
 	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(bad2, &val, 10) == 0)
+	if (eslib_string_to_s32(bad, &s32val, 10) == 0)
 		return -1;
 	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(ugly, &val, 10) == 0)
+	if (eslib_string_to_s32(bad2, &s32val, 10) == 0)
 		return -1;
 	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(ugly2, &val, 10) == 0)
+	if (eslib_string_to_s32(ugly, &s32val, 10) == 0)
 		return -1;
 	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_u32(nasty, &uval, 10) == 0)
+	if (eslib_string_to_s32(ugly2, &s32val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_u32(nasty_u32, &u32val, 10) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
-	if (eslib_string_to_u32(nasty2, &uval, 10) == 0)
+	if (eslib_string_to_u32(nasty_s32, &u32val, 10) == 0)
 		return -1;
 	if (errno != EIO)
 		return -1;
-	if (eslib_string_to_s32(nasty, &val, 10) == 0)
+	if (eslib_string_to_s32(nasty_u32, &s32val, 10) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
-	if (eslib_string_to_s32(nasty2, &val, 10) == 0)
+	if (eslib_string_to_s32(nasty_s32, &s32val, 10) == 0)
 		return -1;
 	if (errno != EOVERFLOW)
 		return -1;
 
-	if (eslib_string_to_s32(nasty2, &val, 16) == 0)
+
+	/* run the same tests for 64 bit */
+	if (eslib_string_to_u64(good, &u64val, 10))
+		return -1;
+	if (u64val != 9999)
+		return -1;
+	if (eslib_string_to_s64(good, &s64val, 10))
+		return -1;
+	if (s64val != 9999)
+		return -1;
+	if (eslib_string_to_s64(good2, &s64val, 10))
+		return -1;
+	if (s64val != -12)
+		return -1;
+	if (eslib_string_to_u64(good3, &u64val, 10))
+		return -1;
+	if (u64val != 1234567)
+		return -1;
+	if (eslib_string_to_s64(good3, &s64val, 10))
+		return -1;
+	if (s64val != 1234567)
+		return -1;
+	if (eslib_string_to_u64("-12", &u64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(bad, &s64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(bad2, &s64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(ugly, &s64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(ugly2, &s64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_u64(nasty_u32, &u64val, 10))
+		return -1;
+	if (eslib_string_to_u64(nasty_s32, &u64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(nasty_u32, &s64val, 10))
+		return -1;
+	if (eslib_string_to_s64(nasty_s32, &s64val, 10))
+		return -1;
+
+	/* extra nasty > 64 bit string */
+	if (eslib_string_to_u64(nasty_u64, &u64val, 10) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+	if (eslib_string_to_u64(nasty_s64, &u64val, 10) == 0)
+		return -1;
+	if (errno != EIO)
+		return -1;
+	if (eslib_string_to_s64(nasty_u64, &s64val, 10) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+	if (eslib_string_to_s64(nasty_s64, &s64val, 10) == 0)
+		return -1;
+	if (errno != EOVERFLOW)
+		return -1;
+
+
+
+	/* TODO add conversion for hex, oct, binary, etc */
+	if (eslib_string_to_s32(nasty_s32, &s32val, 16) == 0)
 		return -1;
 	if (errno != EINVAL)
 		return -1;
