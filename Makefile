@@ -1,4 +1,4 @@
-CFLAGS := -ansi -pedantic -Wall -Wextra -Werror -DNEWNET_IPVLAN -DNEWNET_MACVLAN -ffunction-sections -Wl,--gc-sections
+CFLAGS := -ansi -pedantic -Wall -Wextra -Wconversion -Werror -DNEWNET_IPVLAN -DNEWNET_MACVLAN -ffunction-sections -Wl,--gc-sections
 
 TEST_NETLINK := test_netlink
 TEST_DEVLOG := test_devlog
