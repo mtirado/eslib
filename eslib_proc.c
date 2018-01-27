@@ -65,8 +65,8 @@ int eslib_proc_alloc_fdlist(pid_t pid, int32_t **outlist)
 	char path[256];
 	struct dirent *dent;
 	int32_t fdnum = -1;
-	int first_count;
-	int count;
+	unsigned int first_count;
+	unsigned int count;
 	DIR *dir;
 	int32_t *fdlist = NULL;
 
@@ -135,7 +135,7 @@ int eslib_proc_alloc_fdlist(pid_t pid, int32_t **outlist)
        	}
 	closedir(dir);
 	*outlist = fdlist;
-	return count;
+	return (int)count;
 
 failed:
 	if (fdlist)
@@ -224,7 +224,7 @@ int eslib_proc_setenv(char *name, char *val)
 		/* create new entry, alloc new list */
 		char **newenv;
 		int i;
-		int newsize = sizeof(char *) * (count + 2);
+		unsigned int newsize = sizeof(char *) * ((unsigned int)count + 2);
 		if (!mallocd) {
 			newenv = malloc(newsize);
 			if (newenv == NULL) {
@@ -332,7 +332,7 @@ off_t eslib_procfs_readfile(char *path, char **out)
 		goto err_free;
 	buf[len] = '\0';
 	*out = buf;
-	return len;
+	return (off_t)len;
 
 err_free:
 	free(buf);

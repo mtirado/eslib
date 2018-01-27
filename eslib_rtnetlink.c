@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 #include "eslib.h"
 #include "eslib_rtnetlink.h"
 
@@ -135,7 +136,7 @@ static struct rtattr *nlmsg_addattr(struct nlmsghdr *nlmsg, unsigned short maxle
 				    unsigned short type, void *data, unsigned short size)
 {
 	struct rtattr *attr;
-	unsigned short len = RTA_LENGTH(size); /* add header size */
+	unsigned short len = (unsigned short)RTA_LENGTH(size); /* add header size */
 	errno = 0;
 	if (nlmsg == NULL)
 		return NULL;
@@ -159,9 +160,9 @@ static struct rtattr *nlmsg_addattr(struct nlmsghdr *nlmsg, unsigned short maxle
 /* end nested attribute by updating starting rta's size */
 static int nlmsg_nest_end(struct nlmsghdr *nlmsg, struct rtattr *start)
 {
-	if (nlmsg == NULL || start == NULL)
+	if (nlmsg == NULL || start == NULL || (char *)start >= (char *)NLMSG_TAIL(nlmsg))
 		return -1;
-	start->rta_len = (char *)NLMSG_TAIL(nlmsg) - (char *)start;
+	start->rta_len = (unsigned short)((char *)NLMSG_TAIL(nlmsg) - (char *)start);
 	return 0;
 }
 /* blocks */
@@ -308,8 +309,8 @@ static int nlmsg_send(void *req, unsigned int size)
 
 	/* proper NACK, return error code */
 	close(nlfd);
-	errno = -ack_err;
-	return -ack_err;
+	errno = -(int)ack_err;
+	return errno;
 fail:
 	close(nlfd);
 	return -1;
@@ -351,7 +352,7 @@ int eslib_rtnetlink_linkaddr(char *name, char *addr, unsigned char prefix_len)
 		int i;
 		for (i = 31; i >= prefix_len; --i)
 		{
-			bcast |= htonl(1<<(31-i));
+			bcast |= htonl((unsigned int)1<<(31-i));
 		}
 	}
 
@@ -419,7 +420,7 @@ int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
 	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq     = seqnum;
 	req.ifmsg.ifi_family  = AF_UNSPEC;
-	req.ifmsg.ifi_index   = if_nametoindex(name);
+	req.ifmsg.ifi_index   = (int)if_nametoindex(name);
 	if (req.ifmsg.ifi_index == 0) {
 		printf("could not get index for interface: %s\n", name);
 		return -1;
@@ -435,10 +436,6 @@ int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
 			int brk = 0;
 			char *err = NULL;
 			long val;
-			int len = rdpos - rdstart;
-			if (len <= 0) {
-				return -1;
-			}
 			if (inbuf[rdpos] == '\0') {
 				brk = 1;
 			}
@@ -449,7 +446,7 @@ int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
 				printf("bad hwaddress\n");
 				return -1;
 			}
-			outbuf[wrpos] = val;
+			outbuf[wrpos] = (char)val;
 			rdstart = rdpos+1;
 			++wrpos;
 			if (brk)
@@ -461,7 +458,8 @@ int eslib_rtnetlink_linkhwaddr(char *name, char *hwaddr)
 	addrlen = strnlen(outbuf, MAX_HWADDR);
 	if (addrlen >= MAX_HWADDR)
 		return -1;
-	if (nlmsg_addattr(&req.hdr, sizeof(req),IFLA_ADDRESS,outbuf,1+addrlen)==NULL)
+	if (nlmsg_addattr(&req.hdr, sizeof(req),IFLA_ADDRESS,outbuf,
+				(unsigned short)(1+addrlen))==NULL)
 		return -1;
 	return nlmsg_send(&req, req.hdr.nlmsg_len);
 
@@ -489,12 +487,12 @@ static int eslib_rtnetlink_linkset(char *name, int up)
 	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq     = seqnum;
 	req.ifmsg.ifi_family  = AF_UNSPEC;
-	req.ifmsg.ifi_index   = if_nametoindex(name);
+	req.ifmsg.ifi_index   = (int)if_nametoindex(name);
 	req.ifmsg.ifi_change |= IFF_UP;
 	if (up)
 		req.ifmsg.ifi_flags |= IFF_UP;
 	else
-		req.ifmsg.ifi_flags &= ~IFF_UP;
+		req.ifmsg.ifi_flags &= (unsigned int)~IFF_UP;
 
 	if (req.ifmsg.ifi_index == 0) {
 		printf("could not get index for interface: %s\n", name);
@@ -534,7 +532,7 @@ int eslib_rtnetlink_linkdel(char *name)
 	req.hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq    = seqnum;
 	req.ifmsg.ifi_family = AF_UNSPEC;
-	req.ifmsg.ifi_index  = if_nametoindex(name);
+	req.ifmsg.ifi_index  = (int)if_nametoindex(name);
 
 	if (req.ifmsg.ifi_index == 0) {
 		printf("could not get index for interface: %s\n", name);
@@ -548,10 +546,10 @@ static int create_veth(struct rtnl_iface_req *req, char *name)
 {
 	char name1[IFNAMSIZ];
 	char name2[IFNAMSIZ];
-	unsigned int namelen;
+	unsigned short namelen;
 	struct rtattr *linkinfo, *infodata, *infopeer;
 
-	namelen = strnlen(name, sizeof(name1)+1) + 1; /* + space for 1 digit */
+	namelen = (unsigned short)(strnlen(name, sizeof(name1)+1)+1);/*+space for 1digit*/
 	if (namelen > sizeof(name1)) {
 		printf("veth interface name too long\n");
 		return -1;
@@ -602,7 +600,7 @@ attr_fail:
 static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 {
 	struct rtattr *linkinfo, *infodata;
-	unsigned int namelen;
+	unsigned short namelen;
 	__u32 mindex;
 	__u16 mode = IPVLAN_MODE_L2;
 
@@ -610,7 +608,7 @@ static int create_ipvlan(struct rtnl_iface_req *req, char *name, char *master)
 		printf("no master interface\n");
 		return -1;
 	}
-	namelen = strnlen(name, IFNAMSIZ+1);
+	namelen = (unsigned short)strnlen(name, IFNAMSIZ+1);
 	if (namelen > IFNAMSIZ || namelen == 0) {
 		printf("bad name\n");
 		return -1;
@@ -664,14 +662,14 @@ attr_fail:
 static int create_macvlan(struct rtnl_iface_req *req, char *name, char *master)
 {
 	struct rtattr *linkinfo;/*, *infodata;*/
-	unsigned int namelen;
+	unsigned short namelen;
 	__u32 mindex;
 	/*__u16 mode = MACVLAN_MODE_PASSTHRU;*/
 	if (master == NULL || *master == '\0') {
 		printf("no master interface\n");
 		return -1;
 	}
-	namelen = strnlen(name, IFNAMSIZ+1);
+	namelen = (unsigned short)strnlen(name, IFNAMSIZ+1);
 	if (namelen > IFNAMSIZ || namelen == 0) {
 		printf("bad name\n");
 		return -1;
@@ -810,7 +808,7 @@ int eslib_rtnetlink_linksetns(char *name, __u32 target, int is_pid)
 	req.hdr.nlmsg_len     = NLMSG_LENGTH(sizeof(req.ifmsg));
 	req.hdr.nlmsg_seq     = seqnum;
 	req.ifmsg.ifi_family  = AF_UNSPEC;
-	req.ifmsg.ifi_index   = if_nametoindex(name);
+	req.ifmsg.ifi_index   = (int)if_nametoindex(name);
 	if (req.ifmsg.ifi_index == 0) {
 		printf("could not get index for interface: %s\n", name);
 		return -1;
@@ -1024,7 +1022,7 @@ static const char *get_rtm_typestr(int type)
  *  dio is a struct containing function pointer with input/output pointers,
  *  type is the dump type, RTM_GETLINK, RTM_GETROUTE, etc..
  */
-int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
+int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, unsigned short type)
 {
 	struct {
 		struct nlmsghdr hdr;
@@ -1037,7 +1035,8 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 	struct nlmsghdr *msg;
 	unsigned int seqnum;
 	int nlfd;
-	int msgsize;
+	int r;
+	unsigned int msgsize;
 	int intr = 0;
 	unsigned int msgdat_size = 0;
 	unsigned int tblcount = 0;
@@ -1072,12 +1071,13 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 		return -1;
 	}
 
-	msgsize = nlmsg_do_recv(nlfd, buf, sizeof(buf));
-	if (msgsize <= 0 || (unsigned int)msgsize > sizeof(buf)) {
+	r = nlmsg_do_recv(nlfd, buf, sizeof(buf));
+	if (r <= 0 || (unsigned int)r > sizeof(buf)) {
 		printf("recv linkdump failure\n");
 		close(nlfd);
 		return -1;
 	}
+	msgsize = (unsigned int)r;
 	close(nlfd);
 	msg = (struct nlmsghdr *)buf;
 	if (msg->nlmsg_seq != seqnum) {
@@ -1107,7 +1107,7 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 	while(NLMSG_OK(msg, msgsize))
 	{
 		char *msgdat;
-		int size;
+		unsigned int size;
 
 		if (msg->nlmsg_flags & NLM_F_DUMP_INTR) {
 			intr = 1;
@@ -1122,11 +1122,11 @@ int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type)
 
 		/* dump */
 		msgdat = NLMSG_DATA(msg);
-		size = msg->nlmsg_len - NLMSG_LENGTH(msgdat_size);
-		if (size <= 0) {
+		if (msg->nlmsg_len - NLMSG_LENGTH(msgdat_size) <= 0) {
 			printf("bad nlmsg_len\n");
 			goto free_err;
 		}
+		size = msg->nlmsg_len - NLMSG_LENGTH(msgdat_size);
 		if (rtnetlink_get_dumptbl(tbl, tblcount, msgdat, size, msg->nlmsg_type)) {
 			printf("dumptbl failed\n");
 			goto free_err;

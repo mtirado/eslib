@@ -22,6 +22,7 @@
 	#define MAX_SYSTEMPATH 2048
 #endif
 
+#define ESLIB_STR_MAX (INT_MAX - 1)
 #define ESLIB_LOG_MAXMSG 1024
 #define ESLIB_MAX_PROCNAME 32
 

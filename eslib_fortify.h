@@ -21,6 +21,7 @@
 #include <linux/filter.h>
 #include <linux/capability.h>
 
+/* bpf instruction count must fit within an unsigned short */
 #define MAX_SYSCALLS 400
 #define MAX_BPFINSTRUCTIONS ((MAX_SYSCALLS * 2)+64)
 
@@ -166,7 +167,7 @@ void syscall_printknown();
 /* returns total number of systemcall entries in sc_translate table */
 unsigned int syscall_tablesize();
 /* return the highest system call number */
-unsigned short syscall_gethighest();
+short syscall_gethighest();
 /*
  * return value of capability, defined in <linux/capability.h>
  * -1/NULL is an error

@@ -56,7 +56,7 @@ void rtnl_decode_setoutput(struct rtnl_decode_io *dio, void *v, __u32 size);
 int rtnl_decode_check(struct rtnl_decode_io *dio, __u32 insize, __u32 outsize,
 			__u32 type, __u32 msgsize, __u32 tblcount);
 /* returns -1 and errno set to EAGAIN if dump was interrupted */
-int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, int type);
+int eslib_rtnetlink_dump(struct rtnl_decode_io *dio, unsigned short type);
 
 /* return nested attr of specific type */
 struct rtattr *rtnetlink_get_attr(struct rtattr *attr, unsigned int bounds,

@@ -124,7 +124,7 @@ static int test_ipvlan()
 	}
 	close(ipc[0]);
 	close(ipc[1]);
-	eslib_rtnetlink_linksetns("blaah", p, 1);
+	eslib_rtnetlink_linksetns("blaah", (unsigned int)p, 1);
 	rtnetlink_checkret(r);
 	if (waitpid(p, &status, 0) != p) {
 		printf("waitpid\n");

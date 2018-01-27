@@ -16,6 +16,7 @@
  * obvious assumptions:
  *
  *       len <= size - 1
+ *       ESLIB_STR_MAX < INT_MAX
  *
  * not so obvious:
  *
@@ -34,7 +35,6 @@
 
 #include "eslib.h"
 
-#define STR_MAX (INT_MAX - 1)
 #define DELIM_MAX 255
 
 #define safe_char(chr) (			\
@@ -50,7 +50,7 @@ int eslib_string_is_sane(char *buf, const unsigned int len)
 		return -1;
 	for (idx = 0; idx < len; ++idx)
 	{
-		unsigned char c = buf[idx];
+		char c = buf[idx];
 		/* you're on your own for 8-bit ascii */
 		if (c < 32 || c >= 127) {
 			if (!safe_char(c)) {
@@ -131,7 +131,7 @@ char *eslib_string_toke(char *buf, unsigned int idx,
 	unsigned int token_start;
 
 	*advance = 0;
-	if (len == 0 || len >= STR_MAX || idx > len) {
+	if (len == 0 || len >= ESLIB_STR_MAX || idx > len) {
 		return NULL;
 	}
 	else if (idx == len) {
@@ -288,7 +288,7 @@ int eslib_string_to_u64(char *str, uint64_t *out, int base)
 	return 0;
 }
 /* extra safe snprintf, returns 0 or -1 + errno. outlen is optional
- * size must be < STR_MAX
+ * size must be < ESLIB_STR_MAX
  * printing 0 chars or >= size is an error, but copy truncated string anyway
  * dst buffer gets fully zero'd if error is encountered in vsnprintf call
  */
@@ -300,7 +300,7 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 	int r;
 
 	errno = 0;
-	if (size >= STR_MAX || !dst || !fmt) {
+	if (size >= ESLIB_STR_MAX || !dst || !fmt) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;
@@ -321,12 +321,12 @@ int eslib_string_sprintf(char *dst, const unsigned int size,
 	else if (r >= (int)size) {
 		errno = EOVERFLOW;
 		ret = -1;
-		r = size - 1;
+		r = (int)size - 1;
 	}
 	dst[r] = '\0';
 
 	if (outlen)
-		*outlen = r;
+		*outlen = (unsigned int)r;
 
 	return ret;
 
@@ -337,7 +337,7 @@ failed:
 
 /*
  * copying len 0 is error. so is len >= dst_size, but copy truncated string anyway.
- * if dst_size >= STR_MAX string is terminated at beginning
+ * if dst_size >= ESLIB_STR_MAX string is terminated at beginning
  */
 int eslib_string_copy(char *dst,
 		      const char *src,
@@ -347,7 +347,7 @@ int eslib_string_copy(char *dst,
 	size_t len;
 	int ret = 0;
 	errno = 0;
-	if (dst_size == 0 || dst_size >= STR_MAX || !dst || !src) {
+	if (dst_size == 0 || dst_size >= ESLIB_STR_MAX || !dst || !src) {
 		dst[0] = '\0';
 		errno = EINVAL;
 		return -1;

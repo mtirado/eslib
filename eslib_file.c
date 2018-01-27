@@ -118,11 +118,11 @@ int eslib_file_getparent(char *inpath, char outpath[MAX_SYSTEMPATH])
 	if (eslib_file_path_check(inpath))
 		return -1;
 
-	i = strnlen(inpath, MAX_SYSTEMPATH);
+	i = (int)strnlen(inpath, MAX_SYSTEMPATH);
 	if (i >= MAX_SYSTEMPATH || i == 0)
 		return -1;
 
-	strncpy(outpath, inpath, i);
+	strncpy(outpath, inpath, (size_t)i);
 	outpath[i] = '\0';
 
 	/* find next slash back */
@@ -239,7 +239,7 @@ int eslib_file_mkdirpath(char *path, mode_t mode)
 		if (i >= MAX_SYSTEMPATH-1)
 			break;
 
-		strncpy(curdir, path, i);
+		strncpy(curdir, path, (size_t)i);
 		curdir[i] = '\0';
 
 		/* if directory doesnt exist, create it. */
@@ -330,7 +330,7 @@ char *eslib_file_getname(char *path)
 	if (path == NULL)
 		return NULL;
 
-	len = strnlen(path, MAX_SYSTEMPATH);
+	len = (int)strnlen(path, MAX_SYSTEMPATH);
 	if (len >= MAX_SYSTEMPATH || len < 1)
 		return NULL;
 
@@ -359,13 +359,13 @@ uid_t eslib_file_getuid(char *path)
 	int ret;
 
 	if (path == NULL)
-		return -1;
+		return (uid_t)-1;
 
 	memset(&st, 0, sizeof(st));
 	ret = stat(path, &st);
 	if (ret) {
 		printf("getuid stat: %s\n", strerror(errno));
-		return -1;
+		return (uid_t)-1;
 	}
 
 	return st.st_uid;
@@ -560,7 +560,7 @@ int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out
 			goto err_close;
 		}
 		else if (r > 0) {
-			bytes_read += r;
+			bytes_read += (size_t)r;
 		}
 		else if (r == 0) {
 			break; /* eof */
@@ -577,9 +577,9 @@ int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out
 		goto err_close;
 
 	if (r > 0) {
-		if (bytes_read + r <= bytes_read)
+		if (bytes_read + (size_t)r <= bytes_read)
 			goto err_close;
-		bytes_read += r;
+		bytes_read += (size_t)r;
 		goto ret_file_len;
 	}
 	else if (r != 0)
@@ -601,9 +601,9 @@ ret_file_len:
 		{
 			r = read(fd, buf, buf_size);
 			if (r > 0) {
-				if (bytes_read + r <= bytes_read)
+				if (bytes_read + (size_t)r <= bytes_read)
 					goto problemo;
-				bytes_read += r;
+				bytes_read += (size_t)r;
 			}
 			else if (r < 0 && errno != EINTR) {
 				goto problemo;
@@ -615,7 +615,7 @@ ret_file_len:
 		*out_size = bytes_read;
 	}
 	else if (seek > 0)
-		*out_size = seek;
+		*out_size = (size_t)seek;
 	else
 		goto problemo;
 

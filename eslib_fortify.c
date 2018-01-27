@@ -499,11 +499,11 @@ unsigned int syscall_tablesize()
 	return (sizeof(sc_table) / sizeof(struct sc_translate));
 }
 
-unsigned short syscall_gethighest()
+short syscall_gethighest()
 {
-	const unsigned int count = sizeof(sc_table) / sizeof(struct sc_translate);
-	unsigned int i;
-	int high = 0;
+	const short count = sizeof(sc_table) / sizeof(struct sc_translate);
+	short i;
+	short high = 0;
 	for (i = 0; i < count; ++i)
 	{
 		if (sc_table[i].nr > high)
@@ -639,7 +639,7 @@ int syscall_list_loadarray(struct syscall_list *list, short *src)
 			}
 			break;
 		}
-		if (src[i] < 0 || src[i] > (short)syscall_gethighest())
+		if (src[i] < 0 || src[i] > syscall_gethighest())
 			goto fail;
 		list->list[i] = src[i];
 	}
@@ -729,7 +729,7 @@ int syscall_list_addnum(struct syscall_list *list, short num)
 {
 	if (list->count >= MAX_SYSCALLS-1)
 		return -1;
-	if (num < 0 || num > (short)syscall_gethighest())
+	if (num < 0 || num > syscall_gethighest())
 		return -1;
 	list->list[list->count] = num;
 	++list->count;
@@ -842,7 +842,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 	/* everything is whitelisted if count is 0, this is end of filter */
 	if (count == 0) {
 		SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
-		filter->prog.len = proglen;
+		filter->prog.len = (unsigned short)proglen;
 		filter->prog.filter = prog;
 		return 0;
 	}
@@ -854,7 +854,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 			printf("invalid  wsyscall: %d\n", z);
 			return -1;
 		}
-		SECBPF_JEQ(prog, i, whitelist[z], 0, 1);
+		SECBPF_JEQ(prog, i, (uint32_t)whitelist[z], 0, 1);
 		SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	}
 
@@ -865,7 +865,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 			printf("invalid bsyscall: %d\n", z);
 			return -1;
 		}
-		SECBPF_JEQ(prog, i, blocklist[z], 0, 1);
+		SECBPF_JEQ(prog, i, (uint32_t)blocklist[z], 0, 1);
 		SECBPF_RET(prog,i,SECCOMP_RET_ERRNO|(ENOSYS & SECCOMP_RET_DATA));
 	}
 
@@ -894,7 +894,7 @@ static int build_graylist_filter(struct seccomp_program *filter)
 		return -1;
 	}
 
-	filter->prog.len = proglen;
+	filter->prog.len = (unsigned short)proglen;
 	filter->prog.filter = prog;
 	return 0;
 }
@@ -959,7 +959,7 @@ static int build_blacklist_filter(struct seccomp_program *filter)
 			printf("invalid syscall: z(%d)\n", z);
 			return -1;
 		}
-		SECBPF_JEQ(prog, i, blacklist[z], 0, 1);
+		SECBPF_JEQ(prog, i, (uint32_t)blacklist[z], 0, 1);
 		switch (filter->retaction)
 		{
 		case SECCOMP_RET_TRAP:
@@ -980,7 +980,7 @@ static int build_blacklist_filter(struct seccomp_program *filter)
 	}
 	SECBPF_RET(prog, i, SECCOMP_RET_ALLOW);
 	filter->prog.filter = prog;
-	filter->prog.len = proglen;
+	filter->prog.len = (unsigned short)proglen;
 	return 0;
 }
 
@@ -1111,7 +1111,7 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 {
 	struct __user_cap_header_struct hdr;
 	struct __user_cap_data_struct   data[2];
-	int i;
+	unsigned int i;
 	int inheriting = 0;
 	unsigned long secbits;
 	memset(&hdr, 0, sizeof(hdr));
@@ -1123,17 +1123,17 @@ int set_caps(int *cap_b, int *cap_e, int *cap_p, int *cap_i, int ignore_blacklis
 		if (cap_e && cap_e[i]) {
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
-			data[CAP_TO_INDEX(i)].effective |= CAP_TO_MASK(i);
+			data[CAP_TO_INDEX(i)].effective |= (uint32_t)CAP_TO_MASK(i);
 		}
 		if (cap_p && cap_p[i]) {
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
-			data[CAP_TO_INDEX(i)].permitted	|= CAP_TO_MASK(i);
+			data[CAP_TO_INDEX(i)].permitted	|= (uint32_t)CAP_TO_MASK(i);
 		}
 		if (cap_i && cap_i[i]) {
 			if (!ignore_blacklist && cap_blacklisted(i))
 				return -1;
-			data[CAP_TO_INDEX(i)].inheritable |= CAP_TO_MASK(i);
+			data[CAP_TO_INDEX(i)].inheritable |= (uint32_t)CAP_TO_MASK(i);
 			inheriting = 1;
 		}
 

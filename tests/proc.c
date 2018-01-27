@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "../eslib.h"
 
 struct path_node
@@ -30,11 +31,11 @@ static struct path_node *proc_readmounts()
 {
 	char *fbuf;
 	struct path_node *mountpts = NULL;
-	size_t fsize;
-	size_t fpos = 0;
+	off_t fsize;
+	off_t fpos = 0;
 	errno = 0;
 	fsize = eslib_procfs_readfile("/proc/mounts", &fbuf);
-	if (fsize == (size_t)-1) {
+	if (fsize < 0) {
 		printf("error reading /proc/mounts\n");
 		return NULL;
 	}
@@ -43,6 +44,8 @@ static struct path_node *proc_readmounts()
 		errno = ESRCH;
 		return NULL;
 	}
+	if (fsize >= INT_MAX)
+		return NULL;
 	while (fpos < fsize)
 	{
 		char *line = NULL;
@@ -53,8 +56,8 @@ static struct path_node *proc_readmounts()
 		unsigned int advance = 0;
 
 		line = &fbuf[fpos];
-		linelen = eslib_string_linelen(line, fsize - fpos);
-		if (linelen >= fsize - fpos)
+		linelen=eslib_string_linelen(line, (unsigned int)fsize-(unsigned int)fpos);
+		if (linelen >= (unsigned int)fsize - (unsigned int)fpos)
 			goto failure;
 		if (!eslib_string_is_sane(line, linelen))
 			goto failure;
@@ -81,7 +84,7 @@ static struct path_node *proc_readmounts()
 		pt->next = mountpts;
 		mountpts = pt;
 
-		fpos += linelen+1;
+		fpos += (off_t)linelen+1;
 		if (fpos > fsize)
 			goto failure;
 		else if (fpos == fsize)
