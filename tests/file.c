@@ -13,10 +13,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "../eslib.h"
 
@@ -78,6 +80,47 @@ int test_path_check()
 	if (r) return -1;
 
 	return 0;
+}
+
+#define WRFILENAME "temporarytestfile"
+#define LARGE_SIZE (1024 * 1024 * 128)
+int test_file_write()
+{
+	char wrbuf[256];
+	char rdbuf[256];
+	size_t rdlen;
+	char *largefile = NULL;
+
+	memset(wrbuf, 0, sizeof(wrbuf));
+	memset(rdbuf, 0, sizeof(rdbuf));
+	snprintf(wrbuf, sizeof(wrbuf), "blah\ntest...\ntest file!\n%d\n", getpid());
+
+	if (unlink(WRFILENAME) && errno != ENOENT)
+		goto failure;
+	if (eslib_file_write_full(WRFILENAME, wrbuf, sizeof(wrbuf)))
+		goto failure;
+	if (eslib_file_read_full(WRFILENAME, rdbuf, sizeof(rdbuf), &rdlen))
+		goto failure;
+	if (rdlen != sizeof(wrbuf))
+		goto failure;
+	if (strncmp(rdbuf, wrbuf, sizeof(wrbuf)) != 0)
+		goto failure;
+
+	largefile = malloc(LARGE_SIZE);
+	if (largefile == NULL)
+		goto failure;
+	memset(largefile, 'A', LARGE_SIZE);
+	if (unlink(WRFILENAME))
+		goto failure;
+	if (eslib_file_write_full(WRFILENAME, largefile, LARGE_SIZE))
+		goto failure;
+	free(largefile);
+
+	return 0;
+failure:
+	printf("write failed in an unexpected way\n");
+	printf("%s\n", strerror(errno));
+	return -1;
 }
 
 int test_file_read()
@@ -153,6 +196,8 @@ int main()
 	printf("eslib_file_path_check: passed\n");
 	printf("----------------------------------------------------------\n");
 
+
+
 	if (test_file_read()) {
 		printf("----------------------------------------------------------\n");
 		printf("test_file_read: failed\n");
@@ -163,6 +208,21 @@ int main()
 	printf("----------------------------------------------------------\n");
 	printf("test_file_read: passed\n");
 	printf("----------------------------------------------------------\n");
+
+
+
+	if (test_file_write()) {
+		printf("----------------------------------------------------------\n");
+		printf("test_file_write: failed\n");
+		printf("----------------------------------------------------------\n");
+		return -1;
+	}
+
+	printf("----------------------------------------------------------\n");
+	printf("test_file_write: passed\n");
+	printf("----------------------------------------------------------\n");
+
+
 	return 0;
 
 }

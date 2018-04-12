@@ -628,3 +628,40 @@ problemo:
 	errno = ENOTSUP;
 	return -1;
 }
+
+int eslib_file_write_full(char *filename, char *buf, size_t size)
+{
+	int fd;
+	ssize_t r;
+	size_t bytes_written = 0;
+	errno = 0;
+
+	fd = open(filename, O_RDWR|O_CREAT|O_EXCL, 0750);
+	if (fd == -1)
+		return -1;
+	do {
+		printf("write iterate %d\n", bytes_written);
+		r = write(fd, buf+bytes_written, size - bytes_written);
+		if (r < 0) {
+			goto werror;
+		}
+		else if (r == 0) {
+			errno = ENOSPC;
+			goto werror;
+		}
+		bytes_written += (size_t)r;
+
+	} while (bytes_written < size);
+
+	if (bytes_written > size)
+		goto werror;
+
+	close(fd);
+	return 0;
+
+werror:
+	printf("write error: %s\n", strerror(errno));
+	close(fd);
+	unlink(filename);
+	return -1;
+}

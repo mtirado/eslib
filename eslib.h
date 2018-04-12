@@ -222,6 +222,23 @@ int eslib_file_bind(char *src, char *dest,unsigned long mntflags,unsigned long e
  */
 int eslib_file_read_full(char *filename, char *buf, size_t buf_size, size_t *out_size);
 
+/* write the entire buffer to newly created file.
+ * filename - path to file
+ * buf      - buffer
+ * size     - size of buffer
+ *
+ *
+ * returns
+ *  0 - ok
+ * -1 - error
+ *    + ENOSPC
+ *    		write returned 0, no space left?
+ *    + EEXISTS
+ *              file already exists
+ */
+int eslib_file_write_full(char *filename, char *buf, size_t size);
+
+
 /* =====================================
  * 		process
  * =====================================
