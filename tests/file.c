@@ -115,6 +115,8 @@ int test_file_write()
 	if (eslib_file_write_full(WRFILENAME, largefile, LARGE_SIZE))
 		goto failure;
 	free(largefile);
+	if (unlink(WRFILENAME))
+		goto failure;
 
 	return 0;
 failure:
